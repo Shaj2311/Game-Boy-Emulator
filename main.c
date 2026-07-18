@@ -17,6 +17,19 @@ int main()
 {
 	//boot game boy
 	gb_boot();
+
+	//FDE cycle
+	for(int i = 0; i < 64; i++) //test 64
+	{
+		//get instruction
+		uint8_t instruction = mmu_read(gb.PC);
+
+		//print instruction
+		printf("Instruction read: 0x%02x\n", instruction);
+
+		//next instruction
+		gb.PC++;
+	}
 }
 
 void gb_boot()
@@ -124,11 +137,11 @@ void mmu_write(uint16_t addr, uint8_t val)
 		//also write to echo RAM
 		gb.sysbus[addr + 0x2000] = val;
 	}
-	
+
 	//attempting to write to ROM
 	else if(addr <= 0x7FFF)
 		return;
-	
+
 	//writing normally
 	else
 		gb.sysbus[addr] = val;
