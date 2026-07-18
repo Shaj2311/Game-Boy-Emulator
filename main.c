@@ -10,6 +10,9 @@ char *rom;
 void gb_boot();
 void gb_load_cartridge(const char *cartridge);
 
+uint8_t mmu_read(uint16_t addr);
+void mmu_write(uint16_t addr, uint8_t val);
+
 int main()
 {
 	//boot game boy
@@ -82,4 +85,51 @@ void gb_load_cartridge(const char *cartridge)
 	memcpy(gb.sysbus, rom, 32768);
 
 	puts("Cartridge loaded successfully");
+}
+
+uint8_t mmu_read(uint16_t addr)
+{
+	if(addr <= 0x0100)
+	{
+		//check boot ROM switch
+		if(gb.sysbus[0xFF50])
+		{
+			//read from game cartridge
+			return gb.sysbus[addr];
+		}
+		else
+		{
+			//read from boot ROM
+			return bootROM[addr];
+		}
+	}
+
+	return gb.sysbus[addr];
+}
+
+void mmu_write(uint16_t addr, uint8_t val)
+{
+	//writing to boot ROM switch
+	if(addr == 0xFF50)
+	{
+		if(!gb.sysbus[0xFF50])
+			gb.sysbus[addr] = val;
+	}
+
+	//writing to WRAM (write to echo RAM as well)
+	else if(addr >= 0xC000 && addr <= 0xDDFF)
+	{
+		//write to WRAM
+		gb.sysbus[addr] = val;
+		//also write to echo RAM
+		gb.sysbus[addr + 0x2000] = val;
+	}
+	
+	//attempting to write to ROM
+	else if(addr <= 0x7FFF)
+		return;
+	
+	//writing normally
+	else
+		gb.sysbus[addr] = val;
 }
