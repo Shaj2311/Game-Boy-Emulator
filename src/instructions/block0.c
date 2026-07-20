@@ -56,6 +56,46 @@ void ld_IMM16_sp()
 	mmu_write(imm16 + 1, gb.SP >> 8);
 }
 
+//r16 manipulation
+
+void inc_r16(uint8_t r16)
+{
+	//get r16
+	uint16_t *reg = get_r16(r16);
+
+	//increment value
+	(*reg)++;
+}
+
+void dec_r16(uint8_t r16)
+{
+	//get r16
+	uint16_t *reg = get_r16(r16);
+
+	//decrement value
+	(*reg)--;
+}
+
+void add_hl_r16(uint8_t r16)
+{
+	//get r16
+	uint16_t *reg = get_r16(r16);
+
+	//check overflow
+	uint8_t overflow11 = ((gb.HL & 0x0FFF) + (*reg & 0xFFF)) > 0x0FFF;
+	uint8_t overflow15 = (((uint32_t)gb.HL) + ((uint32_t)*reg)) > 0xFFFF;
+
+	//add value to HL
+	gb.HL += *reg;
+
+	//update flags
+	gb.F &= 0x8F; //clear N,H,C
+	if(overflow11)
+		gb.F |= 0x20; //H=1
+	if(overflow15)
+		gb.F |= 0x10; //C=1
+}
+
 //hardcoded bit manip (reg A)
 void rlca()
 {
