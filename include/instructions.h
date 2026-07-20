@@ -1,6 +1,15 @@
+#include <stdint.h>
+
 #ifndef INSTRUCT_H
 #define INSTRUCT_H
-// bit shift
+
+//load instructions
+void ld_r16_imm16(uint8_t r16);
+void ld_R16MEM_a(uint8_t r16mem);
+void ld_a_R16MEM(uint8_t r16mem);
+void ld_IMM16_sp();
+
+// bit manipulation
 void rlca();
 void rrca();
 void rla();
@@ -13,4 +22,9 @@ void ccf();
 void daa();
 void nop();
 void stop();
+
+//helpers
+uint16_t *get_r16(uint8_t r16);
+uint16_t *get_r16mem(uint8_t r16mem, int *offset);
+
 #endif

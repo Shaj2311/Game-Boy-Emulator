@@ -1,5 +1,60 @@
 #include "instructions.h"
 #include "gb.h"
+#include <stdio.h>
+#include <stdlib.h>
+
+//load instructions
+void ld_r16_imm16(uint8_t r16)
+{
+	//get r16
+	uint16_t *reg = get_r16(r16);
+
+	//get imm16 (little Endian)
+	uint8_t lowByte = mmu_read(gb.PC++);
+	uint8_t highByte = mmu_read(gb.PC++);
+	uint16_t imm16 = (highByte << 8) | lowByte;
+
+	//load
+	*reg = imm16;
+}
+
+void ld_R16MEM_a(uint8_t r16mem)
+{
+	//get r16mem
+	int offset;
+	uint16_t *reg = get_r16mem(r16mem, &offset);
+
+	//load value of a into system bus
+	mmu_write(*reg, gb.A);
+
+	//increment or decrement HL if needed
+	(*reg) += offset;
+}
+
+void ld_a_R16MEM(uint8_t r16mem)
+{
+	//get r16mem
+	int offset;
+	uint16_t *reg = get_r16mem(r16mem, &offset);
+
+	//load value into a
+	gb.A = mmu_read(*reg);
+
+	//apply offset (inc/dec) if needed
+	(*reg) += offset;
+}
+
+void ld_IMM16_sp()
+{
+	//get imm16
+	uint8_t lowByte = mmu_read(gb.PC++);
+	uint8_t highByte = mmu_read(gb.PC++);
+	uint16_t imm16 = (highByte << 8) | lowByte;
+
+	//load value of sp into system bus
+	mmu_write(imm16, gb.SP & 0x00FF);
+	mmu_write(imm16 + 1, gb.SP >> 8);
+}
 
 //hardcoded bit manip (reg A)
 void rlca()
@@ -126,4 +181,44 @@ void stop()
 {
 	//skip next dummy byte
 	gb.PC++;
+}
+
+//helpers
+uint16_t *get_r16(uint8_t r16)
+{
+	switch(r16)
+	{
+		case 0:
+			return &gb.BC;
+		case 1:
+			return &gb.DE;
+		case 2:
+			return &gb.HL;
+		case 3:
+			return &gb.SP;
+		default:
+			puts("Invalid register code");
+			exit(1);
+	}
+}
+
+uint16_t *get_r16mem(uint8_t r16mem, int *offset)
+{
+	*offset = 0;
+	switch(r16mem)
+	{
+		case 0:
+			return &gb.BC;
+		case 1:
+			return &gb.DE;
+		case 2:
+			*offset = 1;
+			return &gb.HL;
+		case 3:
+			*offset = -1;
+			return &gb.HL;
+		default:
+			puts("Invalid register code");
+			exit(1);
+	}
 }

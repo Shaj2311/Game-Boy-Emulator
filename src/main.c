@@ -27,14 +27,6 @@ const uint8_t bootROM[256] =
 };
 char *rom;
 
-void gb_boot();
-void gb_load_cartridge(const char *cartridge);
-void gb_execute(uint8_t instruction);
-void gb_exit_invalid_opcode(uint8_t instruction);
-
-uint8_t mmu_read(uint16_t addr);
-void mmu_write(uint16_t addr, uint8_t val);
-
 int main()
 {
 	//boot game boy
@@ -45,13 +37,10 @@ int main()
 	while(1)
 	{
 		//get instruction
-		uint8_t instruction = mmu_read(gb.PC);
+		uint8_t instruction = mmu_read(gb.PC++);
 
 		//execute instruction
 		gb_execute(instruction);
-
-		//next instruction
-		gb.PC++;
 	}
 }
 
@@ -127,7 +116,7 @@ void gb_execute(uint8_t instruction)
 {
 	//extract information
 	uint8_t r8 = (instruction & 0x3F) >> 3;
-	uint16_t r16 = (instruction & 0x3F) >> 4;
+	uint8_t r16 = (instruction & 0x3F) >> 4;
 	uint8_t cond = (instruction & 0x1F) >> 3;
 
 	//decode instruction

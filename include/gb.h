@@ -18,4 +18,13 @@ typedef struct
 extern const uint8_t bootROM[256];
 
 extern GameBoy gb;
+
+void gb_boot();
+void gb_load_cartridge(const char *cartridge);
+void gb_execute(uint8_t instruction);
+void gb_exit_invalid_opcode(uint8_t instruction);
+
+uint8_t mmu_read(uint16_t addr);
+void mmu_write(uint16_t addr, uint8_t val);
+
 #endif
