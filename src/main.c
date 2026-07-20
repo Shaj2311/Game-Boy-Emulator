@@ -30,6 +30,7 @@ char *rom;
 void gb_boot();
 void gb_load_cartridge(const char *cartridge);
 void gb_execute(uint8_t instruction);
+void gb_exit_invalid_opcode(uint8_t instruction);
 
 uint8_t mmu_read(uint16_t addr);
 void mmu_write(uint16_t addr, uint8_t val);
@@ -39,8 +40,8 @@ int main()
 	//boot game boy
 	gb_boot();
 
+	puts("Executing cartridge...");
 	//FDE cycle
-	//for(int i = 0; i < 64; i++) //test 64
 	while(1)
 	{
 		//get instruction
@@ -129,39 +130,313 @@ void gb_execute(uint8_t instruction)
 	uint16_t r16 = (instruction & 0x3F) >> 4;
 	uint8_t cond = (instruction & 0x1F) >> 3;
 
-	//determine instruction
-	switch(instruction)
+	//decode instruction
+	//check 2 MSB's for block number
+	switch(instruction >> 6)
 	{
-		case 0x0:
-			nop();
+		case 0b00:
+			//check 3 LSB's for instruction type
+			switch(instruction & 0x07)
+			{
+				case 0b000:
+					switch(r8)
+					{
+						case 0b000:
+							nop();
+							break;
+						case 0b010:
+							stop();
+							break;
+						case 0b011:
+							//jr imm8
+							break;
+						default:
+							if(instruction & 0x20)
+							{/*jr cond, imm8*/}
+							else
+								gb_exit_invalid_opcode(instruction);
+							break;
+					}
+					break;
+				case 0b001:
+					switch(instruction & 0x08)
+					{
+						case 0:
+							//ld r16, imm16
+							break;
+						case 1:
+							//add hl, r16
+							break;
+					}
+					break;
+				case 0b010:
+					switch(instruction & 0x08)
+					{
+						case 0:
+							//ld [r16mem], a
+							break;
+						case 1:
+							//ld a, [r16mem]
+							break;
+					}
+					break;
+				case 0b011:
+					switch(instruction & 0x08)
+					{
+						case 0:
+							//inc r16
+							break;
+						case 1:
+							//dec r16
+							break;
+					}
+					break;
+				case 0b100:
+					//inc r8
+					break;
+				case 0b101:
+					//dec r8
+					break;
+				case 0b110:
+					//ld r8, imm8
+					break;
+				case 0b111:
+					switch(r8)
+					{
+						case 0: rlca(); break;
+						case 1: rrca(); break;
+						case 2: rla(); break;
+						case 3: rra(); break;
+						case 4: daa(); break;
+						case 5: cpl(); break;
+						case 6: scf(); break;
+						case 7: ccf(); break;
+					}
+			}
 			break;
-		case 0x07:
-			gb.A = 0xAB;
-			rlca();
+		case 0b01:
+			switch(instruction & 0x3F)
+			{
+				case 0b110110:
+					//halt
+					break;
+				default:
+					//ld r8, r8
+					break;
+			}
 			break;
-		case 0x0F:
-			rrca();
+		case 0b10:
+			switch(r8)
+			{
+				case 0:
+					//add a, r8
+					break;
+				case 1:
+					//adc a, r8
+					break;
+				case 2:
+					//sub a, r8
+					break;
+				case 3:
+					//sbc a, r8
+					break;
+				case 4:
+					//and a, r8
+					break;
+				case 5:
+					//xor a, r8
+					break;
+				case 6:
+					//or a, r8
+					break;
+				case 7:
+					//cp a, r8
+					break;
+			}
 			break;
-		case 0x17:
-			rla();
-			break;
-		case 0x1F:
-			rra();
-			break;
-		case 0x27:
-			daa();
-			break;
-		case 0x2F:
-			cpl();
-			break;
-		case 0x37:
-			scf();
-			break;
-		case 0x3F:
-			ccf();
-			break;
-		case 0x10:
-			stop();
+		case 0b11:
+			switch(instruction & 0x07)
+			{
+				case 0b000:
+					switch(r8)
+					{
+						case 0b100:
+							//ldh [imm8], a
+							break;
+						case 0b101:
+							//add sp, imm8
+							break;
+						case 0b110:
+							//ldh a, [imm8]
+							break;
+						case 0b111:
+							//ld hl, sp + imm8
+							break;
+						default:
+							if((instruction & 0x20) == 0)
+							{/*ret cond*/}
+							else
+								gb_exit_invalid_opcode(instruction);
+							break;
+					}
+					break;
+				case 0b001:
+					switch(r8)
+					{
+						case 0b001:
+							//ret
+							break;
+						case 0b011:
+							//reti
+							break;
+						case 0b101:
+							//jp hl
+							break;
+						case 0b111:
+							//ld sp, hl
+							break;
+						default:
+							if((instruction & 0x08) == 0)
+							{/*pop r16stk*/}
+							else
+								gb_exit_invalid_opcode(instruction);
+							break;
+					}
+					break;
+				case 0b010:
+					switch(r8)
+					{
+						case 0b100:
+							//ldh [c], a
+							break;
+						case 0b101:
+							//ld [imm16], a
+							break;
+						case 0b110:
+							//ldh a, [c]
+							break;
+						case 0b111:
+							//ld a, [imm16]
+							break;
+						default:
+							if((instruction & 0x20) == 0)
+							{/*jp cond, imm16*/}
+							else
+								gb_exit_invalid_opcode(instruction);
+							break;
+					}
+					break;
+				case 0b011:
+					switch(r8)
+					{
+						case 0b000:
+							//jp imm16
+							break;
+						case 0b001:
+							//prefix
+							//get next instruction
+							instruction = mmu_read(++gb.PC);
+							//parse params
+							r8 = instruction & 0x07;
+							uint8_t b3 = (instruction >> 3) & 0x07;
+
+							//check two MSBs
+							switch(instruction >> 6)
+							{
+								case 0:
+									//check middle 3 bits
+									switch(instruction >> 3)
+									{
+										case 0:
+											//rlc r8
+											break;
+										case 1:
+											//rrc r8
+											break;
+										case 2:
+											//rl r8
+											break;
+										case 3:
+											//rr r8
+											break;
+										case 4:
+											//sla r8
+											break;
+										case 5:
+											//sra r8
+											break;
+										case 6:
+											//swap r8
+											break;
+										case 7:
+											//srl r8
+											break;
+									}
+								case 1:
+									//bit b3, r8
+									break;
+								case 2:
+									//res b3, r8
+									break;
+								case 3:
+									//set b3, r8
+									break;
+							}
+							break;
+						case 0b110:
+							//di
+							break;
+						case 0b111:
+							//ei
+							break;
+						default:
+							gb_exit_invalid_opcode(instruction);
+					}
+					break;
+				case 0b100:
+					//call cond, imm16
+					break;
+				case 0b101:
+					if(r8 == 0b001)
+					{/*call imm16*/}
+					else if((instruction & 0x08) == 0)
+					{/*push r16stk*/}
+					else
+						gb_exit_invalid_opcode(instruction);
+					break;
+				case 0b110:
+					switch(r8)
+					{
+						case 0:
+							//add a, imm8
+							break;
+						case 1:
+							//adc a, imm8
+							break;
+						case 2:
+							//sub a, imm8
+							break;
+						case 3:
+							//subc a, imm8
+							break;
+						case 4:
+							//and a, imm8
+							break;
+						case 5:
+							//xor a, imm8
+							break;
+						case 6:
+							//or a, imm8
+							break;
+						case 7:
+							//cp a, imm8
+							break;
+					}
+					break;
+				case 0b111:
+					//rst tgt3
+					break;
+			}
 			break;
 	}
 }
@@ -211,4 +486,9 @@ void mmu_write(uint16_t addr, uint8_t val)
 	//writing normally
 	else
 		gb.sysbus[addr] = val;
+}
+void gb_exit_invalid_opcode(uint8_t instruction)
+{
+	printf("Invalid opcode: 0x%02x\n", instruction);
+	exit(1);
 }

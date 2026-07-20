@@ -7,8 +7,6 @@ OBJS := $(SRCS:.c=.o)
 
 all: $(TARGET)
 
-# gb: main.o bitshift.o misc.o
-# 	gcc $(ARGS) main.o bitshift.o misc.o -o gb
 $(TARGET): $(OBJS)
 	gcc $(ARGS) $(OBJS) -o $(TARGET)
 
