@@ -137,11 +137,11 @@ void gb_execute(uint8_t instruction)
 							stop();
 							break;
 						case 0b011:
-							//jr imm8
+							jr_imm8();
 							break;
 						default:
 							if(instruction & 0x20)
-							{/*jr cond, imm8*/}
+								jr_cond_imm8(cond);
 							else
 								gb_exit_invalid_opcode(instruction);
 							break;
@@ -151,10 +151,10 @@ void gb_execute(uint8_t instruction)
 					switch(instruction & 0x08)
 					{
 						case 0:
-							//ld r16, imm16
+							ld_r16_imm16(r16);
 							break;
 						case 1:
-							//add hl, r16
+							add_hl_r16(r16);
 							break;
 					}
 					break;
@@ -162,10 +162,10 @@ void gb_execute(uint8_t instruction)
 					switch(instruction & 0x08)
 					{
 						case 0:
-							//ld [r16mem], a
+							ld_R16MEM_a(r16);
 							break;
 						case 1:
-							//ld a, [r16mem]
+							ld_a_R16MEM(r16);
 							break;
 					}
 					break;
@@ -173,21 +173,21 @@ void gb_execute(uint8_t instruction)
 					switch(instruction & 0x08)
 					{
 						case 0:
-							//inc r16
+							inc_r16(r16);
 							break;
 						case 1:
-							//dec r16
+							dec_r16(r16);
 							break;
 					}
 					break;
 				case 0b100:
-					//inc r8
+					inc_r8(r8);
 					break;
 				case 0b101:
-					//dec r8
+					dec_r8(r8);
 					break;
 				case 0b110:
-					//ld r8, imm8
+					ld_r8_imm8(r8);
 					break;
 				case 0b111:
 					switch(r8)

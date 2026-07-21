@@ -96,6 +96,57 @@ void add_hl_r16(uint8_t r16)
 		gb.F |= 0x10; //C=1
 }
 
+//r8 manipulation
+
+void inc_r8(uint8_t r8)
+{
+	//save old value
+	uint8_t oldVal = read_r8(r8);
+
+	//increment value
+	uint8_t newVal = oldVal + 1;
+	write_r8(r8, newVal);
+
+	//update flags
+	gb.F &= 0x1F; //reset Z,N,H flags
+
+	if(!newVal)
+		gb.F |= 0x80; //Z = 1
+
+	if((oldVal & 0x0F) + 1 > 0x0F)
+		gb.F |= 0x20; //H = 1
+}
+
+void dec_r8(uint8_t r8)
+{
+	//save old value
+	uint8_t oldVal = read_r8(r8);
+
+	//decrement value
+	uint8_t newVal = oldVal - 1;
+	write_r8(r8, newVal);
+
+	//update flags
+	gb.F &= 0x1F; //reset Z,N,H flags
+
+	if(!newVal)
+		gb.F |= 0x80; //Z = 1
+
+	gb.F |= 0x40; //N = 1
+
+	if((oldVal & 0x0F) == 0)
+		gb.F |= 0x20; //H = 1
+}
+
+void ld_r8_imm8(uint8_t r8)
+{
+	//get imm8
+	uint8_t imm8 = mmu_read(gb.PC++);
+
+	//load value
+	write_r8(r8, imm8);
+}
+
 //hardcoded bit manip (reg A)
 void rlca()
 {
@@ -223,6 +274,19 @@ void stop()
 	gb.PC++;
 }
 
+void jr_imm8()
+{
+	int8_t offset = mmu_read(gb.PC++);
+	gb.PC += offset;
+}
+
+void jr_cond_imm8(uint8_t cond)
+{
+	int8_t offset = mmu_read(gb.PC++);
+	if(is_cond_true(cond))
+		gb.PC += offset;
+}
+
 //helpers
 uint16_t *get_r16(uint8_t r16)
 {
@@ -259,6 +323,84 @@ uint16_t *get_r16mem(uint8_t r16mem, int *offset)
 			return &gb.HL;
 		default:
 			puts("Invalid register code");
+			exit(1);
+	}
+}
+
+uint8_t read_r8(uint8_t r8)
+{
+	switch(r8)
+	{
+		case 0:
+			return gb.B;
+		case 1:
+			return gb.C;
+		case 2:
+			return gb.D;
+		case 3:
+			return gb.E;
+		case 4:
+			return gb.H;
+		case 5:
+			return gb.L;
+		case 6:
+			return mmu_read(gb.HL);
+		case 7:
+			return gb.A;
+		default:
+			puts("Invalid register code");
+			exit(1);
+	}
+}
+
+void write_r8(uint8_t r8, uint8_t val)
+{
+	switch(r8)
+	{
+		case 0:
+			gb.B = val;
+			break;
+		case 1:
+			gb.C = val;
+			break;
+		case 2:
+			gb.D = val;
+			break;
+		case 3:
+			gb.E = val;
+			break;
+		case 4:
+			gb.H = val;
+			break;
+		case 5:
+			gb.L = val;
+			break;
+		case 6:
+			mmu_write(gb.HL, val);
+			break;
+		case 7:
+			gb.A = val;
+			break;
+		default:
+			puts("Invalid register code");
+			exit(1);
+	}
+}
+
+uint8_t is_cond_true(uint8_t cond)
+{
+	switch(cond)
+	{
+		case 0://nz
+			return (!(gb.F & 0x80));
+		case 1://z
+			return (gb.F & 0x80);
+		case 2://nc
+			return (!(gb.F & 0x10));
+		case 3://c
+			return (gb.F & 0x10);
+		default:
+			puts("Invalid condition code");
 			exit(1);
 	}
 }
