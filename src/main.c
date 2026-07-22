@@ -224,28 +224,28 @@ void gb_execute(uint8_t instruction)
 			switch(r8)
 			{
 				case 0:
-					//add a, r8
+					add_a_r8(r8);
 					break;
 				case 1:
-					//adc a, r8
+					adc_a_r8(r8);
 					break;
 				case 2:
-					//sub a, r8
+					sbc_a_r8(r8);
 					break;
 				case 3:
-					//sbc a, r8
+					sbc_a_r8(r8);
 					break;
 				case 4:
-					//and a, r8
+					and_a_r8(r8);
 					break;
 				case 5:
-					//xor a, r8
+					xor_a_r8(r8);
 					break;
 				case 6:
-					//or a, r8
+					or_a_r8(r8);
 					break;
 				case 7:
-					//cp a, r8
+					cp_a_r8(r8);
 					break;
 			}
 			break;
