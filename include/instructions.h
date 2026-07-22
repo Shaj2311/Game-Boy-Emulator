@@ -46,6 +46,18 @@ void stop();
 void ld_r8_r8(uint8_t r8_1, uint8_t r8_2);
 void halt();
 
+//BLOCK 2
+
+//8 bit arithmetic
+void add_a_r8(uint8_t r8);
+void adc_a_r8(uint8_t r8);
+void sub_a_r8(uint8_t r8);
+void sbc_a_r8(uint8_t r8);
+void and_a_r8(uint8_t r8);
+void xor_a_r8(uint8_t r8);
+void or_a_r8(uint8_t r8);
+void cp_a_r8(uint8_t r8);
+
 //helpers
 uint16_t *get_r16(uint8_t r16);
 uint16_t *get_r16mem(uint8_t r16mem, int *offset);
