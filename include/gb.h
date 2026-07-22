@@ -13,6 +13,12 @@ typedef struct
 
 	//64KiB system bus
 	uint8_t sysbus[65536];
+
+	//Halt flag
+	uint8_t halted;
+
+	//Interrupt Master Enable
+	uint8_t IME;
 } GameBoy;
 
 extern const uint8_t bootROM[256];

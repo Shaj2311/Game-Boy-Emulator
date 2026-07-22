@@ -41,6 +41,11 @@ void daa();
 void nop();
 void stop();
 
+//BLOCK 1
+
+void ld_r8_r8(uint8_t r8_1, uint8_t r8_2);
+void halt();
+
 //helpers
 uint16_t *get_r16(uint8_t r16);
 uint16_t *get_r16mem(uint8_t r16mem, int *offset);

@@ -59,6 +59,12 @@ void gb_boot()
 
 	//load cartridge
 	gb_load_cartridge(DBG_CARTRIDGE);
+
+	//don't halt
+	gb.halted = 0;
+
+	//disable interrupts
+	gb.IME = 0;
 }
 
 void gb_load_cartridge(const char *cartridge)
@@ -207,10 +213,10 @@ void gb_execute(uint8_t instruction)
 			switch(instruction & 0x3F)
 			{
 				case 0b110110:
-					//halt
+					halt();
 					break;
 				default:
-					//ld r8, r8
+					ld_r8_r8(r8, instruction & 0x07);
 					break;
 			}
 			break;
@@ -476,6 +482,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 	else
 		gb.sysbus[addr] = val;
 }
+
 void gb_exit_invalid_opcode(uint8_t instruction)
 {
 	printf("Invalid opcode: 0x%02x\n", instruction);
