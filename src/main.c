@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/dmg_boot.bin"
+#define DBG_CARTRIDGE "roms/cpu_instrs.gb"
 
 GameBoy gb;
 const uint8_t bootROM[256] =
@@ -64,8 +64,20 @@ void gb_boot()
 	gb.BC = 0;
 	gb.DE = 0;
 	gb.HL = 0;
-	gb.SP = 0;
+	gb.SP = 0xFFFE;
 	gb.PC = 0;
+
+	////DEBUG: Skip boot ROM
+	//gb.PC = 0x100;
+	//gb.SP = 0xFFFE;
+	//gb.A  = 0x01;
+	//gb.F  = 0xB0;
+	//gb.B  = 0x00;
+	//gb.C  = 0x13;
+	//gb.D  = 0x00;
+	//gb.E  = 0xD8;
+	//gb.H  = 0x01;
+	//gb.L  = 0x4D;
 
 	//reset boot ROM mapping control
 	gb.sysbus[0xFF50] = 0;
@@ -454,7 +466,7 @@ void gb_execute(uint8_t instruction)
 
 uint8_t mmu_read(uint16_t addr)
 {
-	if(addr <= 0x0100)
+	if(addr < 0x0100)
 	{
 		//check boot ROM switch
 		if(gb.sysbus[0xFF50])
