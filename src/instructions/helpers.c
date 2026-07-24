@@ -121,3 +121,28 @@ uint8_t is_cond_true(uint8_t cond)
 			exit(1);
 	}
 }
+
+uint16_t get_imm16()
+{
+	uint8_t low = mmu_read(gb.PC++);
+	uint8_t high = mmu_read(gb.PC++);
+	return (high << 8) | low;
+}
+
+uint16_t *get_r16stk(uint8_t r16)
+{
+	switch(r16)
+	{
+		case 0:
+			return &gb.BC;
+		case 1:
+			return &gb.DE;
+		case 2:
+			return &gb.HL;
+		case 3:
+			return &gb.AF;
+		default:
+			puts("Invalid register code");
+			exit(1);
+	}
+}

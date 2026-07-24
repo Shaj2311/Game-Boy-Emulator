@@ -19,6 +19,9 @@ typedef struct
 
 	//Interrupt Master Enable
 	uint8_t IME;
+
+	//IME scheduled (EI)
+	uint8_t IME_scheduled;
 } GameBoy;
 
 extern const uint8_t bootROM[256];

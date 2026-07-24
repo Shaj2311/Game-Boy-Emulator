@@ -36,6 +36,19 @@ int main()
 	//FDE cycle
 	while(1)
 	{
+		//check IME
+		if(gb.IME_scheduled == 2)
+		{
+			//enable interrupts
+			gb.IME = 1;
+			gb.IME_scheduled = 0;
+		}
+		else if(gb.IME_scheduled == 1)
+		{
+			//one instruction delay
+			gb.IME_scheduled = 2;
+		}
+
 		//get instruction
 		uint8_t instruction = mmu_read(gb.PC++);
 
@@ -65,6 +78,8 @@ void gb_boot()
 
 	//disable interrupts
 	gb.IME = 0;
+	//do not enable interrupts
+	gb.IME_scheduled = 0;
 }
 
 void gb_load_cartridge(const char *cartridge)
@@ -256,20 +271,20 @@ void gb_execute(uint8_t instruction)
 					switch(r8)
 					{
 						case 0b100:
-							//ldh [imm8], a
+							ldh_IMM8_a();
 							break;
 						case 0b101:
-							//add sp, imm8
+							add_sp_imm8();
 							break;
 						case 0b110:
-							//ldh a, [imm8]
+							ldh_a_IMM8();
 							break;
 						case 0b111:
-							//ld hl, sp + imm8
+							ld_hl_spPLUSimm8();
 							break;
 						default:
 							if((instruction & 0x20) == 0)
-							{/*ret cond*/}
+								ret_cond(cond);
 							else
 								gb_exit_invalid_opcode(instruction);
 							break;
@@ -279,20 +294,20 @@ void gb_execute(uint8_t instruction)
 					switch(r8)
 					{
 						case 0b001:
-							//ret
+							ret();
 							break;
 						case 0b011:
-							//reti
+							reti();
 							break;
 						case 0b101:
-							//jp hl
+							jp_hl();
 							break;
 						case 0b111:
-							//ld sp, hl
+							ld_sp_hl();
 							break;
 						default:
 							if((instruction & 0x08) == 0)
-							{/*pop r16stk*/}
+								pop_r16stk(r16);
 							else
 								gb_exit_invalid_opcode(instruction);
 							break;
@@ -302,20 +317,20 @@ void gb_execute(uint8_t instruction)
 					switch(r8)
 					{
 						case 0b100:
-							//ldh [c], a
+							ldh_C_a();
 							break;
 						case 0b101:
-							//ld [imm16], a
+							ld_IMM16_a();
 							break;
 						case 0b110:
-							//ldh a, [c]
+							ldh_a_C();
 							break;
 						case 0b111:
-							//ld a, [imm16]
+							ld_a_IMM16();
 							break;
 						default:
 							if((instruction & 0x20) == 0)
-							{/*jp cond, imm16*/}
+								jp_cond_imm16(cond);
 							else
 								gb_exit_invalid_opcode(instruction);
 							break;
@@ -325,7 +340,7 @@ void gb_execute(uint8_t instruction)
 					switch(r8)
 					{
 						case 0b000:
-							//jp imm16
+							jp_imm16();
 							break;
 						case 0b001:
 							//prefix
@@ -343,59 +358,60 @@ void gb_execute(uint8_t instruction)
 									switch(instruction >> 3)
 									{
 										case 0:
-											//rlc r8
+											rlc_r8(r8);
 											break;
 										case 1:
-											//rrc r8
+											rrc_r8(r8);
 											break;
 										case 2:
-											//rl r8
+											rl_r8(r8);
 											break;
 										case 3:
-											//rr r8
+											rr_r8(r8);
 											break;
 										case 4:
-											//sla r8
+											sla_r8(r8);
 											break;
 										case 5:
-											//sra r8
+											sra_r8(r8);
 											break;
 										case 6:
-											//swap r8
+											swap_r8(r8);
 											break;
 										case 7:
-											//srl r8
+											srl_r8(r8);
 											break;
 									}
+									break;
 								case 1:
-									//bit b3, r8
+									bit_b3_r8(b3, r8);
 									break;
 								case 2:
-									//res b3, r8
+									res_b3_r8(b3, r8);
 									break;
 								case 3:
-									//set b3, r8
+									set_b3_r8(b3, r8);
 									break;
 							}
 							break;
 						case 0b110:
-							//di
+							di();
 							break;
 						case 0b111:
-							//ei
+							ei();
 							break;
 						default:
 							gb_exit_invalid_opcode(instruction);
 					}
 					break;
 				case 0b100:
-					//call cond, imm16
+					call_cond_imm16(cond);
 					break;
 				case 0b101:
 					if(r8 == 0b001)
-					{/*call imm16*/}
+						call_imm16();
 					else if((instruction & 0x08) == 0)
-					{/*push r16stk*/}
+						push_r16stk(r16);
 					else
 						gb_exit_invalid_opcode(instruction);
 					break;
@@ -403,33 +419,33 @@ void gb_execute(uint8_t instruction)
 					switch(r8)
 					{
 						case 0:
-							//add a, imm8
+							add_a_imm8();
 							break;
 						case 1:
-							//adc a, imm8
+							adc_a_imm8();
 							break;
 						case 2:
-							//sub a, imm8
+							sub_a_imm8();
 							break;
 						case 3:
-							//subc a, imm8
+							sbc_a_imm8();
 							break;
 						case 4:
-							//and a, imm8
+							and_a_imm8();
 							break;
 						case 5:
-							//xor a, imm8
+							xor_a_imm8();
 							break;
 						case 6:
-							//or a, imm8
+							or_a_imm8();
 							break;
 						case 7:
-							//cp a, imm8
+							cp_a_imm8();
 							break;
 					}
 					break;
 				case 0b111:
-					//rst tgt3
+					rst_tgt3(r8);
 					break;
 			}
 			break;
