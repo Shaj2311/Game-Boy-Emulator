@@ -1,5 +1,6 @@
 #include "instructions.h"
 #include "gb.h"
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -122,12 +123,14 @@ void cp_a_imm8()
 	if(subVal > oldA)
 		gb.F |= 0x10; //C = 1
 }
-void ret_cond(uint8_t cond)
+uint8_t ret_cond(uint8_t cond)
 {
 	if(is_cond_true(cond))
 	{
 		ret();
+		return 20;
 	}
+	return 8;
 }
 
 void ret()
@@ -147,7 +150,7 @@ void reti()
 	gb.IME = 1;
 }
 
-void jp_cond_imm16(uint8_t cond)
+uint8_t jp_cond_imm16(uint8_t cond)
 {
 	//get imm16
 	uint16_t imm16 = get_imm16();
@@ -156,7 +159,10 @@ void jp_cond_imm16(uint8_t cond)
 	{
 		//jump to imm16
 		gb.PC = imm16;
+
+		return 16;
 	}
+	return 12;
 }
 
 void jp_imm16()
@@ -170,7 +176,7 @@ void jp_hl()
 	gb.PC = gb.HL;
 }
 
-void call_cond_imm16(uint8_t cond)
+uint8_t call_cond_imm16(uint8_t cond)
 {
 	//get imm16
 	uint16_t imm16 = get_imm16();
@@ -186,7 +192,10 @@ void call_cond_imm16(uint8_t cond)
 
 		//jp imm16
 		gb.PC = imm16;
+
+		return 24;
 	}
+	return 12;
 }
 
 void call_imm16()
@@ -468,25 +477,31 @@ void srl_r8(uint8_t r8)
 	gb.F |= 0x10 * lsb; //C = LSB
 }
 
-void bit_b3_r8(uint8_t b3, uint8_t r8)
+uint8_t bit_b3_r8(uint8_t b3, uint8_t r8)
 {
 	//reset Z,N,H
 	gb.F &= 0x10;
 	if(!((read_r8(r8) >> b3) & 0x01))
 		gb.F |= 0x80; //Z = 1
 	gb.F |= 0x20; // H = 1
+	
+	return r8 == 6 ? 12 : 8;
 }
 
-void res_b3_r8(uint8_t b3, uint8_t r8)
+uint8_t res_b3_r8(uint8_t b3, uint8_t r8)
 {
 	uint8_t regval = read_r8(r8);
 	regval &= (~(0x01 << b3));
 	write_r8(r8, regval);
+
+	return r8 == 6 ? 16 : 8;
 }
 
-void set_b3_r8(uint8_t b3, uint8_t r8)
+uint8_t set_b3_r8(uint8_t b3, uint8_t r8)
 {
 	uint8_t regval = read_r8(r8);
 	regval |= (0x01 << b3);
 	write_r8(r8, regval);
+
+	return r8 == 6 ? 16 : 8;
 }

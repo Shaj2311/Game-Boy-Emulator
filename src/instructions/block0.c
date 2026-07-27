@@ -96,7 +96,7 @@ void add_hl_r16(uint8_t r16)
 
 //r8 manipulation
 
-void inc_r8(uint8_t r8)
+uint8_t inc_r8(uint8_t r8)
 {
 	//save old value
 	uint8_t oldVal = read_r8(r8);
@@ -113,9 +113,14 @@ void inc_r8(uint8_t r8)
 
 	if((oldVal & 0x0F) + 1 > 0x0F)
 		gb.F |= 0x20; //H = 1
+
+	//return T-cycle count depending on r8
+	if(r8 == 6)
+		return 12;
+	return 4;
 }
 
-void dec_r8(uint8_t r8)
+uint8_t dec_r8(uint8_t r8)
 {
 	//save old value
 	uint8_t oldVal = read_r8(r8);
@@ -134,15 +139,25 @@ void dec_r8(uint8_t r8)
 
 	if((oldVal & 0x0F) == 0)
 		gb.F |= 0x20; //H = 1
+
+	//return T-cycle count depending on r8
+	if(r8 == 6)
+		return 12;
+	return 4;
 }
 
-void ld_r8_imm8(uint8_t r8)
+uint8_t ld_r8_imm8(uint8_t r8)
 {
 	//get imm8
 	uint8_t imm8 = mmu_read(gb.PC++);
 
 	//load value
 	write_r8(r8, imm8);
+
+	//return T-cycle count depending on r8
+	if(r8 == 6)
+		return 12;
+	return 8;
 }
 
 //hardcoded bit manip (reg A)
@@ -278,9 +293,13 @@ void jr_imm8()
 	gb.PC += offset;
 }
 
-void jr_cond_imm8(uint8_t cond)
+uint8_t jr_cond_imm8(uint8_t cond)
 {
 	int8_t offset = mmu_read(gb.PC++);
 	if(is_cond_true(cond))
+	{
 		gb.PC += offset;
+		return 12;
+	}
+	return 8;
 }

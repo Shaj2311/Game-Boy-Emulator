@@ -8,7 +8,7 @@ OBJS := $(SRCS:.c=.o)
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	gcc $(ARGS) $(OBJS) -o $(TARGET)
+	gcc $(ARGS) $(OBJS) -o $(TARGET) -lSDL3
 
 %.o: %.c
 	gcc $(ARGS) -c $< -o $@

@@ -17,11 +17,11 @@ void dec_r16(uint8_t r16);
 void add_hl_r16(uint8_t r16);
 
 //r8 manipulation
-void inc_r8(uint8_t r8);
-void dec_r8(uint8_t r8);
+uint8_t inc_r8(uint8_t r8);
+uint8_t dec_r8(uint8_t r8);
 
 //r8 load
-void ld_r8_imm8(uint8_t r8);
+uint8_t ld_r8_imm8(uint8_t r8);
 
 // bit manipulation
 void rlca();
@@ -34,7 +34,7 @@ void ccf();
 
 //jumps
 void jr_imm8();
-void jr_cond_imm8(uint8_t cond);
+uint8_t jr_cond_imm8(uint8_t cond);
 
 //misc
 void daa();
@@ -43,7 +43,7 @@ void stop();
 
 //BLOCK 1
 
-void ld_r8_r8(uint8_t r8_1, uint8_t r8_2);
+uint8_t ld_r8_r8(uint8_t r8_1, uint8_t r8_2);
 void halt();
 
 //BLOCK 2
@@ -71,13 +71,13 @@ void or_a_imm8();
 void cp_a_imm8();
 
 //jumps and stack instructions
-void ret_cond(uint8_t cond);
+uint8_t ret_cond(uint8_t cond);
 void ret();
 void reti();
-void jp_cond_imm16(uint8_t cond);
+uint8_t jp_cond_imm16(uint8_t cond);
 void jp_imm16();
 void jp_hl();
-void call_cond_imm16(uint8_t cond);
+uint8_t call_cond_imm16(uint8_t cond);
 void call_imm16();
 void rst_tgt3(uint8_t tgt3);
 
@@ -113,9 +113,9 @@ void swap_r8(uint8_t r8);
 void srl_r8(uint8_t r8);
 
 //0xCB prefix bit manipulation
-void bit_b3_r8(uint8_t b3, uint8_t r8);
-void res_b3_r8(uint8_t b3, uint8_t r8);
-void set_b3_r8(uint8_t b3, uint8_t r8);
+uint8_t bit_b3_r8(uint8_t b3, uint8_t r8);
+uint8_t res_b3_r8(uint8_t b3, uint8_t r8);
+uint8_t set_b3_r8(uint8_t b3, uint8_t r8);
 
 //helpers
 uint16_t *get_r16(uint8_t r16);
