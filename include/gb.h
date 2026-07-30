@@ -14,6 +14,9 @@ typedef struct
 	//64KiB system bus
 	uint8_t sysbus[65536];
 
+	//system clock
+	uint16_t clock;
+
 	//Halt flag
 	uint8_t halted;
 
@@ -32,6 +35,7 @@ void gb_boot();
 void gb_load_cartridge(const char *cartridge);
 uint8_t gb_execute(uint8_t instruction);
 void gb_exit_invalid_opcode(uint8_t instruction);
+void gb_timer_tick(uint8_t cycles);
 
 uint8_t mmu_read(uint16_t addr);
 void mmu_write(uint16_t addr, uint8_t val);

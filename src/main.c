@@ -73,10 +73,10 @@ int main(int argc, char **argv)
 			uint8_t instruction = mmu_read(gb.PC++);
 
 			//execute instruction
-			gb_execute(instruction);
+			uint8_t cycles = gb_execute(instruction);
 
 			//advance cycle count
-			//TODO
+			gb_timer_tick(cycles);
 		}
 
 		//get end ticks
@@ -111,6 +111,9 @@ void gb_boot()
 
 	//reset boot ROM mapping control
 	gb.sysbus[0xFF50] = 0;
+
+	//reset system clock
+	gb.clock = 0;
 
 	//load cartridge
 	gb_load_cartridge(DBG_CARTRIDGE);
@@ -516,6 +519,14 @@ void mmu_write(uint16_t addr, uint8_t val)
 			gb.sysbus[addr] = val;
 	}
 
+	//writing to DIV register
+	else if(addr == 0xFF04)
+	{
+		//reset system clock
+		gb.clock = 0;
+		gb.sysbus[addr] = 0;
+	}
+
 	//writing to WRAM (write to echo RAM as well)
 	else if(addr >= 0xC000 && addr <= 0xDDFF)
 	{
@@ -532,6 +543,57 @@ void mmu_write(uint16_t addr, uint8_t val)
 	//writing normally
 	else
 		gb.sysbus[addr] = val;
+}
+
+void gb_timer_tick(uint8_t cycles)
+{
+	//update system clock
+	uint16_t oldClock = gb.clock;
+	gb.clock += cycles;
+	uint16_t newClock = gb.clock;
+
+	//update DIV (high byte of system clock)
+	gb.sysbus[0xFF04] = newClock >> 8;
+
+	//update TIMA
+	//check TAC
+	uint8_t TAC = mmu_read(0xFF07);
+	uint8_t clockSelect = TAC & 3;
+	//if TIMA increment is enabled,
+	if(TAC & 0x04)
+	{
+		uint8_t TIMA = mmu_read(0xFF05);
+		uint16_t bitmask;
+		//increment TIMA depending on clock select
+		switch(clockSelect)
+		{
+			case 0:
+				bitmask = 1 << 9;
+				break;
+			case 1:
+				bitmask = 1 << 3;
+				break;
+			case 2:
+				bitmask = 1 << 5;
+				break;
+			case 3:
+				bitmask = 1 << 7;
+				break;
+		}
+		//check falling edge and increment TIMA
+		if((oldClock & bitmask) && !(newClock & bitmask))
+		{
+			TIMA++;
+			//check TIMA overflow, reset to TMA value, request timer interrupt
+			if(!TIMA)
+			{
+				gb.sysbus[0xFF05] = mmu_read(0xFF06);
+				gb.sysbus[0xFF0F] |= 0x04;
+			}
+			else
+				gb.sysbus[0xFF05] = TIMA;
+		}
+	}
 }
 
 void gb_exit_invalid_opcode(uint8_t instruction)
