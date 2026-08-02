@@ -69,6 +69,9 @@ int main(int argc, char **argv)
 				gb.IME_scheduled = 2;
 			}
 
+			//service interrupts
+			gb_service_interrupts();
+
 			//get instruction
 			uint8_t instruction = mmu_read(gb.PC++);
 
@@ -176,6 +179,55 @@ void gb_load_cartridge(const char *cartridge)
 	memcpy(gb.sysbus, rom, (romSize < 32768 ? romSize : 32768));
 
 	puts("Cartridge loaded successfully");
+}
+
+void gb_service_interrupts()
+{
+	//get IE and IF
+	uint8_t IE = mmu_read(0xFFFF);
+	uint8_t IF = mmu_read(0xFF0F);
+
+	//check unhalt condition
+	if(gb.halted && (IE & IF & 0X1F))
+		gb.halted = 0;
+
+	//check master interrupt enable
+	if(!gb.IME)
+		return;
+
+	//check each interrupt enable
+	for(int i = 0; i <= 4; i++)
+	{
+		//skip if interrupt not enabled
+		if(!((IE >> i) & 0x01))
+			continue;
+
+		//skip if interrupt not requested
+		if(!((IF >> i) & 0x01))
+			continue;
+
+		//get address of service routine
+		uint16_t targetAddr = 0x40 + (8 * i);
+
+		//push current address onto stack
+		mmu_write(--gb.SP, gb.PC >> 8);
+		mmu_write(--gb.SP, gb.PC & 0xFF);
+
+		//jump to service routine
+		gb.PC = targetAddr;
+
+		//advance timer ticks
+		gb_timer_tick(20);
+
+		//reset IF bit
+		gb.sysbus[0xFF0F] &= ~(0x01 << i);
+
+		//disable interrupts
+		gb.IME = 0;
+
+		//don't service any other interrupts
+		break;
+	}
 }
 
 uint8_t gb_execute(uint8_t instruction)

@@ -33,6 +33,7 @@ extern GameBoy gb;
 
 void gb_boot();
 void gb_load_cartridge(const char *cartridge);
+void gb_service_interrupts();
 uint8_t gb_execute(uint8_t instruction);
 void gb_exit_invalid_opcode(uint8_t instruction);
 void gb_timer_tick(uint8_t cycles);
