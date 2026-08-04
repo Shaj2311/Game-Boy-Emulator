@@ -7,6 +7,7 @@
 #define GB_MASTER_CLOCK_FREQ 4194304
 #define GB_FPS 59.73
 #define GB_CYCLES_PER_FRAME (GB_MASTER_CLOCK_FREQ / GB_FPS)
+#define GB_MS_PER_FRAME (1000.0 / GB_FPS)
 
 int main(int argc, char **argv)
 {
@@ -27,7 +28,7 @@ int main(int argc, char **argv)
 		//get start ticks
 		uint64_t startTicks = SDL_GetPerformanceCounter();
 
-		uint16_t cycles = 0;
+		uint32_t cycles = 0;
 		while(cycles < GB_CYCLES_PER_FRAME)
 		{
 			//check IME
@@ -46,14 +47,26 @@ int main(int argc, char **argv)
 			//service interrupts
 			gb_service_interrupts();
 
-			//get instruction
-			uint8_t instruction = mmu_read(gb.PC++);
+			//check if halted
+			uint8_t currCycles;
+			if(gb.halted)
+			{
+				currCycles = 4;
+			}
+			else
+			{
+				//get instruction
+				uint8_t instruction = mmu_read(gb.PC++);
 
-			//execute instruction
-			uint8_t cycles = gb_execute(instruction);
+				//execute instruction
+				currCycles = gb_execute(instruction);
+			}
 
 			//advance cycle count
-			gb_timer_tick(cycles);
+			gb_timer_tick(currCycles);
+
+			//advance total cycles executed in this frame
+			cycles += currCycles;
 		}
 
 		//get end ticks
@@ -61,5 +74,11 @@ int main(int argc, char **argv)
 
 		//calculate delta
 		double msDelta = ((double)(endTicks - startTicks) / sdlPerfFreq) * 1000;
+
+		//apply frame pacing
+		if(msDelta < GB_MS_PER_FRAME)
+			SDL_Delay((uint32_t)(GB_MS_PER_FRAME - msDelta));
+		//apply spin wait for higher precision pacing
+		while(((double)(SDL_GetPerformanceCounter() - startTicks) / sdlPerfFreq) * 1000 < GB_MS_PER_FRAME);
 	}
 }

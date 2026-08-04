@@ -1,8 +1,6 @@
 #include "instructions.h"
 #include "gb.h"
 #include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
 
 void add_a_imm8()
 {
@@ -484,7 +482,7 @@ uint8_t bit_b3_r8(uint8_t b3, uint8_t r8)
 	if(!((read_r8(r8) >> b3) & 0x01))
 		gb.F |= 0x80; //Z = 1
 	gb.F |= 0x20; // H = 1
-	
+
 	return r8 == 6 ? 12 : 8;
 }
 
