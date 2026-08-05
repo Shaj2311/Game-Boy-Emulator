@@ -551,6 +551,13 @@ void mmu_write(uint16_t addr, uint8_t val)
 		gb.sysbus[addr] = new;
 	}
 
+	//writing to LYC (that'll change the LYC==LY condition)
+	else if(addr == 0xFF45)
+	{
+		gb.sysbus[0xFF45] = val;
+		ppu_set_LY(gb.sysbus[0xFF44]);
+	}
+
 	//writing normally
 	else
 		gb.sysbus[addr] = val;
@@ -618,6 +625,15 @@ void ppu_set_mode(PPU_Mode mode)
 {
 	gb.ppu_mode = mode;
 	gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | mode;
+
+	//request STAT interrupt on mode transition (except pixel transfer mode)
+	if(
+		mode != PPU_MODE_PIX_TRANS &&
+		(gb.sysbus[0xFF41] >> (mode + 3)) & 0x01
+		)
+	{
+		gb.sysbus[0xFF0F] |= 0x02;
+	}
 }
 
 void ppu_set_LY(uint8_t LY)
@@ -627,7 +643,12 @@ void ppu_set_LY(uint8_t LY)
 
 	//update LYC==LY
 	if(gb.sysbus[0xFF45] == LY)
+	{
 		gb.sysbus[0xFF41] |= 0x04;
+		//request STAT interrupt
+		if((gb.sysbus[0xFF41] >> 6) & 0x01)
+			gb.sysbus[0xFF0F] |= 0x02;
+	}
 	else
 		gb.sysbus[0xFF41] &= ~(0X04);
 }
