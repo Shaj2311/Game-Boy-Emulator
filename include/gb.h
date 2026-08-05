@@ -55,6 +55,7 @@ void gb_timer_tick(uint8_t cycles);
 uint8_t mmu_read(uint16_t addr);
 void mmu_write(uint16_t addr, uint8_t val);
 
+void ppu_set_mode(PPU_Mode mode);
 void ppu_timer_tick(uint16_t cycles);
 
 #endif

@@ -614,6 +614,12 @@ void gb_exit_invalid_opcode(uint8_t instruction)
 	exit(1);
 }
 
+void ppu_set_mode(PPU_Mode mode)
+{
+	gb.ppu_mode = mode;
+	gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | mode;
+}
+
 void ppu_timer_tick(uint16_t cycles)
 {
 	//get LCD control
@@ -623,18 +629,19 @@ void ppu_timer_tick(uint16_t cycles)
 	{
 		//reset cycles
 		gb.ppu_cycles = 0;
+
 		//reset to top scanline
 		mmu_write(0xFF44, 0);
-		//reset mode
-		gb.ppu_mode = PPU_MODE_HBLANK;
 
-		//update STAT register
-		uint8_t STAT = mmu_read(0xFF41);
-		//reset bits 0-2
-		STAT &= 0xF8;
+		//reset mode
+		ppu_set_mode(PPU_MODE_HBLANK);
+
 		//update LYC==LY
+		uint8_t STAT = mmu_read(0xFF41);
 		if(!mmu_read(0xFF45))
 			STAT |= 0x04;
+		else
+			STAT &= ~(0X04);
 		gb.sysbus[0xFF41] = STAT;
 
 		return;
@@ -645,33 +652,29 @@ void ppu_timer_tick(uint16_t cycles)
 	uint8_t LY = mmu_read(0xFF44);
 	if(LY < 144)
 	{
-		if(gb.ppu_cycles >= 0 && gb.ppu_cycles <= 79)
+		if(gb.ppu_cycles <= 79)
 		{
 			//OAM search
-			//update ppu mode
-			gb.ppu_mode = PPU_MODE_OAM_SEARCH;
-			gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_OAM_SEARCH;
+			ppu_set_mode(PPU_MODE_OAM_SEARCH);
 		}
 		else if(gb.ppu_cycles <= 251)
 		{
 			//Pixel transfer
-			//update ppu mode
-			gb.ppu_mode = PPU_MODE_PIX_TRANS;
-			gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_PIX_TRANS;
+			ppu_set_mode(PPU_MODE_PIX_TRANS);
 		}
 		else if(gb.ppu_cycles <= 455)
 		{
 			//H-blank
-			//update ppu mode
-			gb.ppu_mode = PPU_MODE_HBLANK;
-			gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_HBLANK;
+			ppu_set_mode(PPU_MODE_HBLANK);
 		}
 		else
 		{
 			//End of line reached
+
 			//move to next line
 			gb.ppu_cycles -= 456;
 			gb.sysbus[0xFF44] = ++LY;
+
 			//update LYC==LY
 			if(LY == mmu_read(0xFF45))
 				gb.sysbus[0xFF41] |= 0x04;
@@ -682,9 +685,7 @@ void ppu_timer_tick(uint16_t cycles)
 			if(LY == 144)
 			{
 				//Vblank
-				//update ppu mode
-				gb.ppu_mode = PPU_MODE_VBLANK;
-				gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_VBLANK;
+				ppu_set_mode(PPU_MODE_VBLANK);
 				//request vblank interrupt
 				gb.sysbus[0xFF0F] |= 0x01;
 			}
@@ -693,9 +694,7 @@ void ppu_timer_tick(uint16_t cycles)
 	else
 	{
 		//vblank
-		//update ppu mode
-		gb.ppu_mode = PPU_MODE_VBLANK;
-		gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_VBLANK;
+		ppu_set_mode(PPU_MODE_VBLANK);
 
 		//visible scanlines complete
 		if(gb.ppu_cycles >= 456)
@@ -710,11 +709,7 @@ void ppu_timer_tick(uint16_t cycles)
 				mmu_write(0xFF44, 0);
 
 				//reset ppu mode
-				gb.ppu_mode = PPU_MODE_OAM_SEARCH;
-				uint8_t STAT = mmu_read(0xFF41);
-				STAT &= 0xFC;
-				STAT |= 2;
-				gb.sysbus[0xFF41] = STAT;
+				ppu_set_mode(PPU_MODE_OAM_SEARCH);
 
 				//update LYC==LY
 				if(!mmu_read(0xFF45))
@@ -728,6 +723,7 @@ void ppu_timer_tick(uint16_t cycles)
 				//move to next line
 				LY++;
 				gb.sysbus[0xFF44] = LY;
+				//update LYC == LY
 				if(LY == mmu_read(0xFF45))
 					gb.sysbus[0xFF41] |= 0x04;
 				else
