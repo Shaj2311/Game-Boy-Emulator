@@ -620,6 +620,18 @@ void ppu_set_mode(PPU_Mode mode)
 	gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | mode;
 }
 
+void ppu_set_LY(uint8_t LY)
+{
+	//write new scanline to LY
+	gb.sysbus[0xFF44] = LY;
+
+	//update LYC==LY
+	if(gb.sysbus[0xFF45] == LY)
+		gb.sysbus[0xFF41] |= 0x04;
+	else
+		gb.sysbus[0xFF41] &= ~(0X04);
+}
+
 void ppu_timer_tick(uint16_t cycles)
 {
 	//get LCD control
@@ -630,19 +642,11 @@ void ppu_timer_tick(uint16_t cycles)
 		//reset cycles
 		gb.ppu_cycles = 0;
 
-		//reset to top scanline
-		mmu_write(0xFF44, 0);
-
 		//reset mode
 		ppu_set_mode(PPU_MODE_HBLANK);
 
-		//update LYC==LY
-		uint8_t STAT = mmu_read(0xFF41);
-		if(!mmu_read(0xFF45))
-			STAT |= 0x04;
-		else
-			STAT &= ~(0X04);
-		gb.sysbus[0xFF41] = STAT;
+		//reset to top scanline
+		ppu_set_LY(0);
 
 		return;
 	}
@@ -673,13 +677,7 @@ void ppu_timer_tick(uint16_t cycles)
 
 			//move to next line
 			gb.ppu_cycles -= 456;
-			gb.sysbus[0xFF44] = ++LY;
-
-			//update LYC==LY
-			if(LY == mmu_read(0xFF45))
-				gb.sysbus[0xFF41] |= 0x04;
-			else
-				gb.sysbus[0xFF41] &= ~(0x04);
+			ppu_set_LY(++LY);
 
 			//check vblank
 			if(LY == 144)
@@ -704,30 +702,16 @@ void ppu_timer_tick(uint16_t cycles)
 			//if all scanlines complete (including hidden), reset to line 0
 			if(LY == 153)
 			{
-				//reset LY to line 0
-				LY = 0;
-				mmu_write(0xFF44, 0);
-
 				//reset ppu mode
 				ppu_set_mode(PPU_MODE_OAM_SEARCH);
 
-				//update LYC==LY
-				if(!mmu_read(0xFF45))
-					gb.sysbus[0xFF41] |= 0x04;
-				else
-					gb.sysbus[0xFF41] &= ~(0x04);
-
+				//reset to line 0
+				ppu_set_LY(0);
 			}
 			else
 			{
 				//move to next line
-				LY++;
-				gb.sysbus[0xFF44] = LY;
-				//update LYC == LY
-				if(LY == mmu_read(0xFF45))
-					gb.sysbus[0xFF41] |= 0x04;
-				else
-					gb.sysbus[0xFF41] &= ~(0x04);
+				ppu_set_LY(++LY);
 			}
 		}
 	}
