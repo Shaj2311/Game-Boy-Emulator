@@ -1,6 +1,15 @@
 #ifndef GB_H
 #define GB_H
 #include <stdint.h>
+
+typedef enum
+{
+	PPU_MODE_HBLANK,
+	PPU_MODE_VBLANK,
+	PPU_MODE_OAM_SEARCH,
+	PPU_MODE_PIX_TRANS
+} PPU_Mode;
+
 typedef struct
 {
 	//CPU registers
@@ -25,10 +34,15 @@ typedef struct
 
 	//IME scheduled (EI)
 	uint8_t IME_scheduled;
+
+	//PPU current cycle count
+	uint16_t ppu_cycles;
+
+	//PPU mode
+	PPU_Mode ppu_mode;
 } GameBoy;
 
 extern const uint8_t bootROM[256];
-
 extern GameBoy gb;
 
 void gb_boot();
@@ -40,5 +54,7 @@ void gb_timer_tick(uint8_t cycles);
 
 uint8_t mmu_read(uint16_t addr);
 void mmu_write(uint16_t addr, uint8_t val);
+
+void ppu_timer_tick(uint16_t cycles);
 
 #endif

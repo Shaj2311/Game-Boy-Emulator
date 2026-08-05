@@ -66,6 +66,11 @@ void gb_boot()
 	gb.IME = 0;
 	//do not enable interrupts
 	gb.IME_scheduled = 0;
+
+	gb.ppu_cycles = 0;
+	//start with OAM search
+	gb.ppu_mode = PPU_MODE_OAM_SEARCH;
+	gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_OAM_SEARCH;
 }
 
 void gb_load_cartridge(const char *cartridge)
@@ -530,9 +535,26 @@ void mmu_write(uint16_t addr, uint8_t val)
 	else if(addr <= 0x7FFF)
 		return;
 
+	//writing to LY register
+	else if(addr == 0xFF44)
+		//reset register
+		gb.sysbus[addr] = 0;
+
+	//writing to STAT register
+	else if(addr == 0xFF41)
+	{
+		//get old STAT value
+		uint8_t old = gb.sysbus[0xFF41];
+		//join with new STAT value
+		uint8_t new = (old & 0x07) | (val & 0x78) | 0x80;
+		//write new value
+		gb.sysbus[addr] = new;
+	}
+
 	//writing normally
 	else
 		gb.sysbus[addr] = val;
+
 }
 
 void gb_timer_tick(uint8_t cycles)
@@ -590,4 +612,127 @@ void gb_exit_invalid_opcode(uint8_t instruction)
 {
 	printf("Invalid opcode: 0x%02x\n", instruction);
 	exit(1);
+}
+
+void ppu_timer_tick(uint16_t cycles)
+{
+	//get LCD control
+	uint8_t LCDC = mmu_read(0xFF40);
+	//check LDC and PPU enable
+	if(!(LCDC >> 7))
+	{
+		//reset cycles
+		gb.ppu_cycles = 0;
+		//reset to top scanline
+		mmu_write(0xFF44, 0);
+		//reset mode
+		gb.ppu_mode = PPU_MODE_HBLANK;
+
+		//update STAT register
+		uint8_t STAT = mmu_read(0xFF41);
+		//reset bits 0-2
+		STAT &= 0xF8;
+		//update LYC==LY
+		if(!mmu_read(0xFF45))
+			STAT |= 0x04;
+		gb.sysbus[0xFF41] = STAT;
+
+		return;
+	}
+
+	//TODO: implement modes
+	gb.ppu_cycles += cycles;
+	uint8_t LY = mmu_read(0xFF44);
+	if(LY < 144)
+	{
+		if(gb.ppu_cycles >= 0 && gb.ppu_cycles <= 79)
+		{
+			//OAM search
+			//update ppu mode
+			gb.ppu_mode = PPU_MODE_OAM_SEARCH;
+			gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_OAM_SEARCH;
+		}
+		else if(gb.ppu_cycles <= 251)
+		{
+			//Pixel transfer
+			//update ppu mode
+			gb.ppu_mode = PPU_MODE_PIX_TRANS;
+			gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_PIX_TRANS;
+		}
+		else if(gb.ppu_cycles <= 455)
+		{
+			//H-blank
+			//update ppu mode
+			gb.ppu_mode = PPU_MODE_HBLANK;
+			gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_HBLANK;
+		}
+		else
+		{
+			//End of line reached
+			//move to next line
+			gb.ppu_cycles -= 456;
+			gb.sysbus[0xFF44] = ++LY;
+			//update LYC==LY
+			if(LY == mmu_read(0xFF45))
+				gb.sysbus[0xFF41] |= 0x04;
+			else
+				gb.sysbus[0xFF41] &= ~(0x04);
+
+			//check vblank
+			if(LY == 144)
+			{
+				//Vblank
+				//update ppu mode
+				gb.ppu_mode = PPU_MODE_VBLANK;
+				gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_VBLANK;
+				//request vblank interrupt
+				gb.sysbus[0xFF0F] |= 0x01;
+			}
+		}
+	}
+	else
+	{
+		//vblank
+		//update ppu mode
+		gb.ppu_mode = PPU_MODE_VBLANK;
+		gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_VBLANK;
+
+		//visible scanlines complete
+		if(gb.ppu_cycles >= 456)
+		{
+			gb.ppu_cycles -= 456;
+
+			//if all scanlines complete (including hidden), reset to line 0
+			if(LY == 153)
+			{
+				//reset LY to line 0
+				LY = 0;
+				mmu_write(0xFF44, 0);
+
+				//reset ppu mode
+				gb.ppu_mode = PPU_MODE_OAM_SEARCH;
+				uint8_t STAT = mmu_read(0xFF41);
+				STAT &= 0xFC;
+				STAT |= 2;
+				gb.sysbus[0xFF41] = STAT;
+
+				//update LYC==LY
+				if(!mmu_read(0xFF45))
+					gb.sysbus[0xFF41] |= 0x04;
+				else
+					gb.sysbus[0xFF41] &= ~(0x04);
+
+			}
+			else
+			{
+				//move to next line
+				LY++;
+				gb.sysbus[0xFF44] = LY;
+				if(LY == mmu_read(0xFF45))
+					gb.sysbus[0xFF41] |= 0x04;
+				else
+					gb.sysbus[0xFF41] &= ~(0x04);
+			}
+		}
+	}
 }
