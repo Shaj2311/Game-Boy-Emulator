@@ -5,9 +5,10 @@
 #include <stdlib.h>
 #define DBG_CARTRIDGE "roms/cpu_instrs.gb"
 
+#define LCDC_ADDR 0xFF40
+#define STAT_ADDR 0xFF41
 #define LY_ADDR 0xFF44
 #define LYC_ADDR 0xFF45
-#define STAT_ADDR 0xFF41
 
 GameBoy gb;
 const uint8_t bootROM[256] =
@@ -740,4 +741,38 @@ void ppu_timer_tick(uint16_t cycles)
 			}
 		}
 	}
+}
+
+OAM_Result ppu_oam_search()
+{
+	OAM_Result result;
+	result.count = 0;
+
+	uint8_t LCDC = gb.sysbus[LCDC_ADDR];
+
+	//check OBJ enable
+	if(!(LCDC & 0x02))
+		return result;
+
+	uint8_t spriteHeight = LCDC & 0x04 ? 16 : 8;
+
+	//get LY
+	uint8_t LY = gb.sysbus[LY_ADDR];
+
+	//search OAM
+	uint16_t addr = 0xFE00;
+	while(result.count < 10 && addr <= 0xFE9F)
+	{
+		//get sprite
+		Sprite *ptr = (Sprite *)(gb.sysbus + addr);
+		//compare Y with LY
+		if(LY + 16 >= ptr->y && LY + 16 < ptr->y + spriteHeight)
+		{
+			result.sprites[result.count++] = ptr;
+			result.count++;
+		}
+		addr += sizeof(Sprite);
+	}
+
+	return result;
 }

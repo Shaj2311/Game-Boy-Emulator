@@ -42,6 +42,20 @@ typedef struct
 	PPU_Mode ppu_mode;
 } GameBoy;
 
+typedef struct
+{
+	uint8_t y;
+	uint8_t x;
+	uint8_t tileIndex;
+	uint8_t attr;
+} Sprite;
+
+typedef struct
+{
+	Sprite *sprites[10];
+	uint8_t count;
+} OAM_Result;
+
 extern const uint8_t bootROM[256];
 extern GameBoy gb;
 
@@ -58,5 +72,6 @@ void mmu_write(uint16_t addr, uint8_t val);
 void ppu_set_mode(PPU_Mode mode);
 void ppu_set_LY(uint8_t LY);
 void ppu_timer_tick(uint16_t cycles);
+OAM_Result ppu_oam_search();
 
 #endif
