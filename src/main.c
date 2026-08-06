@@ -64,6 +64,7 @@ int main(int argc, char **argv)
 
 			//advance cycle count
 			gb_timer_tick(currCycles);
+			ppu_timer_tick(currCycles);
 
 			//advance total cycles executed in this frame
 			cycles += currCycles;

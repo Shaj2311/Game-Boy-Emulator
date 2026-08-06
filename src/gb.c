@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #define DBG_CARTRIDGE "roms/cpu_instrs.gb"
 
+#define LY_ADDR 0xFF44
+#define LYC_ADDR 0xFF45
+#define STAT_ADDR 0xFF41
+
 GameBoy gb;
 const uint8_t bootROM[256] =
 {
@@ -70,7 +74,7 @@ void gb_boot()
 	gb.ppu_cycles = 0;
 	//start with OAM search
 	gb.ppu_mode = PPU_MODE_OAM_SEARCH;
-	gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | PPU_MODE_OAM_SEARCH;
+	gb.sysbus[STAT_ADDR] = (gb.sysbus[STAT_ADDR] & 0xFC) | PPU_MODE_OAM_SEARCH;
 }
 
 void gb_load_cartridge(const char *cartridge)
@@ -536,15 +540,15 @@ void mmu_write(uint16_t addr, uint8_t val)
 		return;
 
 	//writing to LY register
-	else if(addr == 0xFF44)
+	else if(addr == LY_ADDR)
 		//reset register
 		gb.sysbus[addr] = 0;
 
 	//writing to STAT register
-	else if(addr == 0xFF41)
+	else if(addr == STAT_ADDR)
 	{
 		//get old STAT value
-		uint8_t old = gb.sysbus[0xFF41];
+		uint8_t old = gb.sysbus[STAT_ADDR];
 		//join with new STAT value
 		uint8_t new = (old & 0x07) | (val & 0x78) | 0x80;
 		//write new value
@@ -552,10 +556,10 @@ void mmu_write(uint16_t addr, uint8_t val)
 	}
 
 	//writing to LYC (that'll change the LYC==LY condition)
-	else if(addr == 0xFF45)
+	else if(addr == LYC_ADDR)
 	{
-		gb.sysbus[0xFF45] = val;
-		ppu_set_LY(gb.sysbus[0xFF44]);
+		gb.sysbus[LYC_ADDR] = val;
+		ppu_set_LY(gb.sysbus[LY_ADDR]);
 	}
 
 	//writing normally
@@ -624,12 +628,12 @@ void gb_exit_invalid_opcode(uint8_t instruction)
 void ppu_set_mode(PPU_Mode mode)
 {
 	gb.ppu_mode = mode;
-	gb.sysbus[0xFF41] = (gb.sysbus[0xFF41] & 0xFC) | mode;
+	gb.sysbus[STAT_ADDR] = (gb.sysbus[STAT_ADDR] & 0xFC) | mode;
 
 	//request STAT interrupt on mode transition (except pixel transfer mode)
 	if(
 		mode != PPU_MODE_PIX_TRANS &&
-		(gb.sysbus[0xFF41] >> (mode + 3)) & 0x01
+		(gb.sysbus[STAT_ADDR] >> (mode + 3)) & 0x01
 		)
 	{
 		gb.sysbus[0xFF0F] |= 0x02;
@@ -639,18 +643,18 @@ void ppu_set_mode(PPU_Mode mode)
 void ppu_set_LY(uint8_t LY)
 {
 	//write new scanline to LY
-	gb.sysbus[0xFF44] = LY;
+	gb.sysbus[LY_ADDR] = LY;
 
 	//update LYC==LY
-	if(gb.sysbus[0xFF45] == LY)
+	if(gb.sysbus[LYC_ADDR] == LY)
 	{
-		gb.sysbus[0xFF41] |= 0x04;
+		gb.sysbus[STAT_ADDR] |= 0x04;
 		//request STAT interrupt
-		if((gb.sysbus[0xFF41] >> 6) & 0x01)
+		if((gb.sysbus[STAT_ADDR] >> 6) & 0x01)
 			gb.sysbus[0xFF0F] |= 0x02;
 	}
 	else
-		gb.sysbus[0xFF41] &= ~(0X04);
+		gb.sysbus[STAT_ADDR] &= ~(0X04);
 }
 
 void ppu_timer_tick(uint16_t cycles)
@@ -674,7 +678,7 @@ void ppu_timer_tick(uint16_t cycles)
 
 	//TODO: implement modes
 	gb.ppu_cycles += cycles;
-	uint8_t LY = mmu_read(0xFF44);
+	uint8_t LY = mmu_read(LY_ADDR);
 	if(LY < 144)
 	{
 		if(gb.ppu_cycles <= 79)
