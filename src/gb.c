@@ -86,11 +86,17 @@ void gb_boot()
 	//read from ROM bank 1
 	gb.currRomBank = 1;
 
+	//disable RAM access
+	gb.ramEnable = 0;
+
 	//reset system clock
 	gb.clock = 0;
 
 	//load cartridge
 	gb_load_cartridge(DBG_CARTRIDGE);
+
+	//initialize cartridge RAM
+	gb_init_cartridge_ram();
 
 	//don't halt
 	gb.halted = 0;
@@ -113,9 +119,46 @@ void gb_boot()
 	gb.windowLinesRendered = 0;
 }
 
+void gb_init_cartridge_ram()
+{
+	gb.cartridgeRAM = 0;
+	gb.cartridgeRamSize = 0;
+
+	//read RAM size from ROM
+	uint8_t ramSizeCode = gb.rom[0x0149];
+	switch(ramSizeCode)
+	{
+		case 1:
+			gb.cartridgeRamSize = 2048;
+			break;
+		case 2:
+			gb.cartridgeRamSize = 8192;
+			break;
+		case 3:
+			gb.cartridgeRamSize = 32768;
+			break;
+		case 4:
+			gb.cartridgeRamSize = 131072;
+			break;
+		case 5:
+			gb.cartridgeRamSize = 65536;
+			break;
+	}
+
+	//initialize cartridge RAM
+	if(gb.cartridgeRamSize > 0)
+	{
+		gb.cartridgeRAM = calloc(1, gb.cartridgeRamSize);
+		if(!gb.cartridgeRAM)
+		{
+			puts("Error allocating cartridge RAM");
+			exit(1);
+		}
+	}
+}
 void gb_load_cartridge(const char *cartridge)
 {
-	printf("Reading cartridge %s...\n", cartridge);
+	printf("Reading cartridge %s\n", cartridge);
 
 	//get cartridge
 	FILE *romFile = fopen(cartridge, "rb");
@@ -527,19 +570,52 @@ uint8_t gb_execute(uint8_t instruction)
 
 uint8_t mmu_read(uint16_t addr)
 {
+	//reading from boot ROM
 	if(addr < 0x0100)
 	{
 		//check boot ROM switch
-		if(gb.sysbus[0xFF50])
-		{
-			//read from game cartridge
-			return gb.sysbus[addr];
-		}
-		else
+		if(gb.sysbus[0xFF50] == 0)
 		{
 			//read from boot ROM
 			return bootROM[addr];
 		}
+	}
+
+	//reading from switchable ROM bank (0x4000 - 0x7FFF)
+	if(addr >= 0x4000 && addr <= 0x7FFF)
+	{
+		uint8_t bank = gb.currRomBank;
+
+		//default to bank 1
+		if(bank == 0)
+			bank = 1;
+
+		//handle ROM mode 0
+		if(gb.bankingMode == 0)
+		{
+			bank |= (gb.ramBankOrRomHigh << 5);
+		}
+
+		uint32_t offset = (addr - 0x4000) + ((uint32_t)bank * 0x4000);
+
+		//prevent out-of-bounds reads
+		offset %= gb.romSize;
+
+		return gb.rom[offset];
+	}
+
+	//reading from external cartridge RAM
+	if(addr >= 0xA000 && addr <= 0xBFFF)
+	{
+		if(gb.ramEnable && gb.cartridgeRAM != 0)
+		{
+			uint8_t ramBank = gb.bankingMode ? gb.ramBankOrRomHigh : 0;
+			uint32_t offset = (addr - 0xA000) + (ramBank * 0x2000);
+
+			if(offset < gb.cartridgeRamSize)
+				return gb.cartridgeRAM[offset];
+		}
+		return 0xFF;
 	}
 
 	return gb.sysbus[addr];
@@ -552,6 +628,33 @@ void mmu_write(uint16_t addr, uint8_t val)
 	{
 		if(!gb.sysbus[0xFF50])
 			gb.sysbus[addr] = val;
+	}
+
+	//writing to RAM enable
+	else if(addr <= 0x1FFF)
+	{
+		gb.ramEnable = ((val & 0x0F) == 0x0A);
+	}
+
+	//writing to ROM bank number
+	else if(addr <= 0x3FFF)
+	{
+		val &= 0x1F;
+		if(val == 0)
+			val = 1;
+		gb.currRomBank = val;
+	}
+
+	//writing to RAM bank or upper ROM
+	else if(addr <= 0x5FFF)
+	{
+		gb.ramBankOrRomHigh = val & 0x03;
+	}
+
+	//writing to banking mode select
+	else if(addr <= 0x7FFF)
+	{
+		gb.bankingMode = val & 0x01;
 	}
 
 	//writing to DIV register
@@ -571,9 +674,24 @@ void mmu_write(uint16_t addr, uint8_t val)
 		gb.sysbus[addr + 0x2000] = val;
 	}
 
-	//attempting to write to ROM
-	else if(addr <= 0x7FFF)
-		return;
+	//writing to echo RAM (write to WRAM as well)
+	else if(addr >= 0xE000 && addr <= 0xFDFF)
+	{
+		//write to echo RAM
+		gb.sysbus[addr] = val;
+		//also write to WRAM
+		gb.sysbus[addr - 0x2000] = val;
+	}
+
+	//writing to cartridge RAM
+	else if(addr >= 0xA000 && addr <= 0xBFFF)
+	{
+		if(gb.ramEnable && gb.cartridgeRAM != 0)
+		{
+			uint8_t ramBank = gb.bankingMode ? gb.ramBankOrRomHigh : 0;
+			gb.cartridgeRAM[(addr - 0xA000) + ((uint32_t)ramBank * 0x2000)] = val;
+		}
+	}
 
 	//writing to LY register
 	else if(addr == LY_ADDR)

@@ -60,6 +60,13 @@ typedef struct
 	char *rom;
 	long romSize;
 	uint8_t currRomBank;
+
+	//Banking details
+	uint8_t ramEnable;
+	uint8_t ramBankOrRomHigh;
+	uint8_t bankingMode;
+	uint8_t *cartridgeRAM;
+	size_t cartridgeRamSize;
 } GameBoy;
 
 typedef struct
@@ -76,6 +83,7 @@ extern GameBoy gb;
 extern const uint32_t RGBA[4];
 
 void gb_boot();
+void gb_init_cartridge_ram();
 void gb_load_cartridge(const char *cartridge);
 void gb_service_interrupts();
 uint8_t gb_execute(uint8_t instruction);

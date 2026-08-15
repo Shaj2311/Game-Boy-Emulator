@@ -31,7 +31,7 @@ int main(int argc, char **argv)
 	//boot game boy
 	gb_boot();
 
-	puts("Executing cartridge...");
+	puts("Executing cartridge");
 	//FDE cycle
 	while(running)
 	{
@@ -114,7 +114,7 @@ int main(int argc, char **argv)
 		while(((double)(SDL_GetPerformanceCounter() - startTicks) / sdlPerfFreq) * 1000 < GB_MS_PER_FRAME);
 	}
 
-	puts("Exiting...");
+	puts("Exiting");
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
 	return 0;
