@@ -117,5 +117,7 @@ int main(int argc, char **argv)
 	puts("Exiting");
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
+	free(gb.cartridgeRAM);
+	free(gb.rom);
 	return 0;
 }

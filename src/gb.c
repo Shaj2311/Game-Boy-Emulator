@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/cpu_instrs.gb"
+#define DBG_CARTRIDGE "roms/01-special.gb"
 
 #define LCDC_ADDR 0xFF40
 #define STAT_ADDR 0xFF41
