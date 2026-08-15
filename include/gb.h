@@ -12,6 +12,20 @@ typedef enum
 
 typedef struct
 {
+	uint8_t y;
+	uint8_t x;
+	uint8_t tileIndex;
+	uint8_t attr;
+} Sprite;
+
+typedef struct
+{
+	Sprite *sprites[10];
+	uint8_t count;
+} OAM_Result;
+
+typedef struct
+{
 	//CPU registers
 	union {uint16_t AF; struct{uint8_t F; uint8_t A;};};
 	union {uint16_t BC; struct{uint8_t C; uint8_t B;};};
@@ -46,15 +60,10 @@ typedef struct
 
 	//Window line counter
 	uint8_t windowLinesRendered;
-} GameBoy;
 
-typedef struct
-{
-	uint8_t y;
-	uint8_t x;
-	uint8_t tileIndex;
-	uint8_t attr;
-} Sprite;
+	//OAM Search Result
+	OAM_Result OAM_search_result;
+} GameBoy;
 
 typedef struct
 {
@@ -63,12 +72,6 @@ typedef struct
 	uint8_t b;
 	uint8_t a;
 } GB_RGBA;
-
-typedef struct
-{
-	Sprite *sprites[10];
-	uint8_t count;
-} OAM_Result;
 
 extern const uint8_t bootROM[256];
 extern GameBoy gb;
@@ -88,7 +91,7 @@ void ppu_set_mode(PPU_Mode mode);
 void ppu_set_LY(uint8_t LY);
 void ppu_timer_tick(uint16_t cycles);
 OAM_Result ppu_oam_search();
-void ppu_pixel_transfer(OAM_Result oamSearchResult);
+void ppu_pixel_transfer();
 void ppu_pix_trans_bg(uint8_t X, uint8_t Y, uint8_t SCX, uint8_t SCY, uint8_t LCDC, uint16_t bgTileMapAddr, uint8_t *currBg);
 void ppu_pix_trans_win(uint8_t X, uint8_t Y, uint8_t WX, uint8_t WY, uint8_t LCDC, uint16_t winTileMapAddr, uint8_t *currBg);
 void ppu_pix_trans_sprites(OAM_Result sprites, uint8_t LCDC, uint8_t *currBg);

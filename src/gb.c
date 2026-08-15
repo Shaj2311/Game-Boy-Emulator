@@ -655,6 +655,7 @@ void gb_exit_invalid_opcode(uint8_t instruction)
 
 void ppu_set_mode(PPU_Mode mode)
 {
+	uint8_t oldMode = gb.ppu_mode;
 	gb.ppu_mode = mode;
 	gb.sysbus[STAT_ADDR] = (gb.sysbus[STAT_ADDR] & 0xFC) | mode;
 
@@ -665,6 +666,15 @@ void ppu_set_mode(PPU_Mode mode)
 		)
 	{
 		gb.sysbus[0xFF0F] |= 0x02;
+	}
+
+	//execute current PPU mode
+	if(gb.ppu_mode != oldMode)
+	{
+		if(gb.ppu_mode == PPU_MODE_OAM_SEARCH)
+			gb.OAM_search_result = ppu_oam_search();
+		else if(gb.ppu_mode == PPU_MODE_PIX_TRANS)
+			ppu_pixel_transfer();
 	}
 }
 
@@ -704,7 +714,6 @@ void ppu_timer_tick(uint16_t cycles)
 		return;
 	}
 
-	//TODO: implement modes
 	gb.ppu_cycles += cycles;
 	uint8_t LY = mmu_read(LY_ADDR);
 	if(LY < 144)
@@ -740,6 +749,11 @@ void ppu_timer_tick(uint16_t cycles)
 				//request vblank interrupt
 				gb.sysbus[0xFF0F] |= 0x01;
 			}
+			else
+			{
+				//OAM Search
+				ppu_set_mode(PPU_MODE_OAM_SEARCH);
+			}
 		}
 	}
 	else
@@ -757,6 +771,9 @@ void ppu_timer_tick(uint16_t cycles)
 			{
 				//reset ppu mode
 				ppu_set_mode(PPU_MODE_OAM_SEARCH);
+
+				//reset rendered window lines count
+				gb.windowLinesRendered = 0;
 
 				//reset to line 0
 				ppu_set_LY(0);
@@ -804,7 +821,7 @@ OAM_Result ppu_oam_search()
 	return result;
 }
 
-void ppu_pixel_transfer(OAM_Result oamSearchResult)
+void ppu_pixel_transfer()
 {
 	//get LCD control
 	uint8_t LCDC = gb.sysbus[LCDC_ADDR];
@@ -812,6 +829,9 @@ void ppu_pixel_transfer(OAM_Result oamSearchResult)
 	//get current scanline, set up X and Y
 	uint8_t Y = gb.sysbus[LY_ADDR];
 	uint8_t X = 0;
+
+	//get OAM search result
+	OAM_Result oamSearchResult = gb.OAM_search_result;
 
 	//check LCD & PPU enable
 	if(!(LCDC & 0x80))
@@ -824,7 +844,6 @@ void ppu_pixel_transfer(OAM_Result oamSearchResult)
 	}
 
 	//set up scanline information buffers
-	uint8_t currLine[160];
 	uint8_t currBg[160];
 
 	//get scroll position (SCY, SCX)
@@ -860,8 +879,7 @@ void ppu_pixel_transfer(OAM_Result oamSearchResult)
 	uint8_t BGP = gb.sysbus[BGP_ADDR];
 	for(int x = 0; x < 160; x++)
 	{
-		uint8_t shade = (BGP >> (currBg[x] * 2)) & 0x03;
-		gb.frameBuffer[Y * 160 + x] = ppu_lookup_shade_index(currBg[x], gb.sysbus[BGP_ADDR]);
+		gb.frameBuffer[Y * 160 + x] = ppu_lookup_shade_index(currBg[x], BGP);
 	}
 
 	//render sprites
@@ -1040,7 +1058,6 @@ void ppu_pix_trans_sprites(OAM_Result OAM_sprites, uint8_t LCDC, uint8_t *currBg
 
 		//check priority
 		uint8_t priority = bestSprite->attr >> 7;
-		uint8_t *currBgLine = gb.frameBuffer + LY * 160;
 		uint8_t currBgColor = currBg[i];
 		//if background is enabled and current pixel's bg color has priority over sprite, skip drawing sprite
 		if((LCDC & 0x01) && priority && (currBgColor != 0))
