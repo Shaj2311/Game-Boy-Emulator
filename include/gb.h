@@ -49,20 +49,17 @@ typedef struct
 	//IME scheduled (EI)
 	uint8_t IME_scheduled;
 
-	//PPU current cycle count
+	//PPU Details
 	uint16_t ppu_cycles;
-
-	//PPU mode
 	PPU_Mode ppu_mode;
-
-	//Frame Buffer
 	uint32_t frameBuffer[160 * 144];
-
-	//Window line counter
 	uint8_t windowLinesRendered;
-
-	//OAM Search Result
 	OAM_Result OAM_search_result;
+
+	//ROM details
+	char *rom;
+	long romSize;
+	uint8_t currRomBank;
 } GameBoy;
 
 typedef struct

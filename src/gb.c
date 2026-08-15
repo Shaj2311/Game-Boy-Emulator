@@ -51,7 +51,6 @@ const uint32_t RGBA[4] = {
 	0x306230FF,
 	0x0F380FFF
 };
-char *rom;
 
 uint32_t ppu_lookup_RGBA(uint8_t colorIndex, uint8_t paletteReg)
 {
@@ -83,6 +82,9 @@ void gb_boot()
 
 	//reset boot ROM mapping control
 	gb.sysbus[0xFF50] = 0;
+
+	//read from ROM bank 1
+	gb.currRomBank = 1;
 
 	//reset system clock
 	gb.clock = 0;
@@ -129,8 +131,8 @@ void gb_load_cartridge(const char *cartridge)
 		puts("Error reading cartridge");
 		exit(1);
 	}
-	long romSize = ftell(romFile);
-	if(romSize == -1)
+	gb.romSize = ftell(romFile);
+	if(gb.romSize == -1)
 	{
 		puts("Error reading cartridge");
 		exit(1);
@@ -143,9 +145,9 @@ void gb_load_cartridge(const char *cartridge)
 	}
 
 	//read cartridge
-	rom = malloc(romSize);
-	size_t itemsRead = fread(rom, 1, romSize, romFile);
-	if(itemsRead < (size_t)romSize)
+	gb.rom = malloc(gb.romSize);
+	size_t itemsRead = fread(gb.rom, 1, gb.romSize, romFile);
+	if(itemsRead < (size_t)gb.romSize)
 	{
 		puts("Error reading cartridge");
 		exit(1);
@@ -156,8 +158,8 @@ void gb_load_cartridge(const char *cartridge)
 		exit(1);
 	}
 
-	//load into memory (0x0000 - 0x7FFF)
-	memcpy(gb.sysbus, rom, (romSize < 32768 ? romSize : 32768));
+	//load ROM bank 0 into memory (0x0000 - 0x3FFF)
+	memcpy(gb.sysbus, gb.rom, (gb.romSize < 0x4000 ? gb.romSize : 0x4000));
 
 	puts("Cartridge loaded successfully");
 }
