@@ -10,6 +10,15 @@
 #define LY_ADDR 0xFF44
 #define LYC_ADDR 0xFF45
 
+#define SCY_ADDR 0xFF42
+#define SCX_ADDR 0xFF43
+#define WY_ADDR 0xFF4A
+#define WX_ADDR 0xFF4B
+
+#define BGP_ADDR 0xFF47
+#define OBP0_ADDR 0xFF48
+#define OBP1_ADDR 0xFF49
+
 GameBoy gb;
 const uint8_t bootROM[256] =
 {
@@ -30,8 +39,19 @@ const uint8_t bootROM[256] =
 	0x21, 0x04, 0x01, 0x11, 0xA8, 0x00, 0x1A, 0x13, 0xBE, 0x20, 0xFE, 0x23, 0x7D, 0xFE, 0x34, 0x20,
 	0xF5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xFB, 0x86, 0x20, 0xFE, 0x3E, 0x01, 0xE0, 0x50
 };
+const GB_RGBA RGBA[4] = {
+	{15, 56, 15, 1},
+	{48, 98, 48, 1},
+	{139, 172, 15, 1},
+	{155, 188, 15, 1}
+};
 char *rom;
 
+uint8_t ppu_lookup_shade_index(uint8_t code, uint8_t paletteReg)
+{
+	//get shade index
+	return (paletteReg >> (code * 2)) & 0x03;
+}
 
 void gb_boot()
 {
@@ -76,6 +96,13 @@ void gb_boot()
 	//start with OAM search
 	gb.ppu_mode = PPU_MODE_OAM_SEARCH;
 	gb.sysbus[STAT_ADDR] = (gb.sysbus[STAT_ADDR] & 0xFC) | PPU_MODE_OAM_SEARCH;
+
+	//clean framebuffer
+	uint8_t white = ppu_lookup_shade_index(0, gb.sysbus[OBP0_ADDR]);
+	for(int i = 0; i < 144 * 160; i++)
+		gb.frameBuffer[i] = white;
+	//no lines rendered yet
+	gb.windowLinesRendered = 0;
 }
 
 void gb_load_cartridge(const char *cartridge)
@@ -775,4 +802,253 @@ OAM_Result ppu_oam_search()
 	}
 
 	return result;
+}
+
+void ppu_pixel_transfer(OAM_Result oamSearchResult)
+{
+	//get LCD control
+	uint8_t LCDC = gb.sysbus[LCDC_ADDR];
+
+	//get current scanline, set up X and Y
+	uint8_t Y = gb.sysbus[LY_ADDR];
+	uint8_t X = 0;
+
+	//check LCD & PPU enable
+	if(!(LCDC & 0x80))
+	{
+		//reset screen to white
+		uint32_t white = ppu_lookup_shade_index(0, gb.sysbus[BGP_ADDR]);
+		for(int x = 0; x < 160; x++)
+			gb.frameBuffer[Y * 160 + x] = white;
+		return;
+	}
+
+	//set up scanline information buffers
+	uint8_t currLine[160];
+	uint8_t currBg[160];
+
+	//get scroll position (SCY, SCX)
+	uint8_t SCY = gb.sysbus[SCY_ADDR];
+	uint8_t SCX = gb.sysbus[SCX_ADDR];
+
+	//get window position (WY, WX)
+	uint8_t WY = gb.sysbus[WY_ADDR];
+	uint8_t WX = gb.sysbus[WX_ADDR];
+
+	//get background tilemap starting address
+	uint16_t bgTileMapAddr = (LCDC >> 3) & 0x01 ? 0x9C00 : 0x9800;
+
+	//get window tilemap starting address
+	uint16_t winTileMapAddr = (LCDC >> 6) & 0x01 ? 0x9C00 : 0x9800;
+
+	//check BG & Window enable
+	if((LCDC & 0x01))
+	{
+		//render background
+		ppu_pix_trans_bg(X, Y, SCX, SCY, LCDC, bgTileMapAddr, currBg);
+
+		//render window
+		ppu_pix_trans_win(X, Y, WX, WY, LCDC, winTileMapAddr, currBg);
+	}
+	else
+	{
+		//don't draw background
+		memset(currBg, 0, 160);
+	}
+
+	//draw bg/window colors to framebuffer
+	uint8_t BGP = gb.sysbus[BGP_ADDR];
+	for(int x = 0; x < 160; x++)
+	{
+		uint8_t shade = (BGP >> (currBg[x] * 2)) & 0x03;
+		gb.frameBuffer[Y * 160 + x] = ppu_lookup_shade_index(currBg[x], gb.sysbus[BGP_ADDR]);
+	}
+
+	//render sprites
+	ppu_pix_trans_sprites(oamSearchResult, LCDC, currBg);
+}
+
+void ppu_pix_trans_bg(uint8_t X, uint8_t Y, uint8_t SCX, uint8_t SCY, uint8_t LCDC, uint16_t bgTileMapAddr, uint8_t *currBg)
+{
+	//render background
+	while(X < 160)
+	{
+		//convert screen coordinates to canvas coordinates
+		uint8_t canvasX = X + SCX;
+		uint8_t canvasY = Y + SCY;
+
+		//get tile index
+		uint16_t tilemapEntryAddr =
+			bgTileMapAddr
+			+ ((canvasY / 8) * 32)
+			+ (canvasX / 8);
+
+		uint8_t tileIndex = gb.sysbus[tilemapEntryAddr];
+
+		//get 2bpp data
+		uint8_t currTileBit = canvasY % 8;
+		uint16_t tileDataAddr;
+
+		if(LCDC & 0x10) //address depends on signed vs unsigned addressing
+			tileDataAddr = 0x8000 + (tileIndex * 16) + (currTileBit * 2);
+		else
+			tileDataAddr = 0x9000 + ((int8_t)tileIndex * 16) + (currTileBit * 2);
+
+		uint8_t lowByte = gb.sysbus[tileDataAddr];
+		uint8_t highByte = gb.sysbus[tileDataAddr + 1];
+
+		//extract and store 2bpp data
+		uint8_t bitPosition = 7 - (canvasX % 8);
+		uint8_t highBit = (highByte >> bitPosition) & 0x01;
+		uint8_t lowBit = (lowByte >> bitPosition) & 0x01;
+		uint8_t colorIndex = (highBit << 1) | lowBit;
+		currBg[X] = colorIndex;
+
+		//advance through scanline
+		X++;
+	}
+}
+
+void ppu_pix_trans_win(uint8_t X, uint8_t Y, uint8_t WX, uint8_t WY, uint8_t LCDC, uint16_t winTileMapAddr, uint8_t *currBg)
+{
+	//check window enable
+	if(!(LCDC & 0x20))
+		return;
+
+	//check position bounds
+	if(Y < WY || WX >= (160 + 6))
+		return;
+
+	int windowXoffset = (int)WX - 7;
+	uint8_t lineRendered = 0;
+
+	while(X < 160)
+	{
+		if((int)X < windowXoffset)
+		{
+			X++;
+			continue;
+		}
+
+		lineRendered = 1;
+
+		//convert screen coordinates to canvas coordinates
+		uint8_t canvasX = (int)X - windowXoffset;
+		uint8_t canvasY = gb.windowLinesRendered;
+
+		//get tile index
+		uint16_t tilemapEntryAddr =
+			winTileMapAddr
+			+ ((canvasY / 8) * 32)
+			+ (canvasX / 8);
+
+		uint8_t tileIndex = gb.sysbus[tilemapEntryAddr];
+
+		//get 2bpp data
+		uint8_t currTileBit = canvasY % 8;
+		uint16_t tileDataAddr;
+
+		if(LCDC & 0x10) //address depends on signed vs unsigned addressing
+			tileDataAddr = 0x8000 + (tileIndex * 16) + (currTileBit * 2);
+		else
+			tileDataAddr = 0x9000 + ((int8_t)tileIndex * 16) + (currTileBit * 2);
+
+		uint8_t lowByte = gb.sysbus[tileDataAddr];
+		uint8_t highByte = gb.sysbus[tileDataAddr + 1];
+
+		//extract and store 2bpp data
+		uint8_t bitPosition = 7 - (canvasX % 8);
+		uint8_t highBit = (highByte >> bitPosition) & 0x01;
+		uint8_t lowBit = (lowByte >> bitPosition) & 0x01;
+		uint8_t colorIndex = (highBit << 1) | lowBit;
+		currBg[X] = colorIndex;
+
+		//advance through scanline
+		X++;
+	}
+
+	if(lineRendered)
+		gb.windowLinesRendered++;
+}
+
+void ppu_pix_trans_sprites(OAM_Result OAM_sprites, uint8_t LCDC, uint8_t *currBg)
+{
+	//check object enable
+	if(!(LCDC & 0x02))
+		return;
+
+	Sprite **sprites = OAM_sprites.sprites;
+	uint8_t LY = gb.sysbus[LY_ADDR];
+
+	//for each screen pixel on current scanline,
+	for(int i = 0; i < 160; i++)
+	{
+		//search for best sprite
+		uint16_t bestX = -1;
+		uint8_t bestColorIndex = 0;
+		Sprite *bestSprite = 0;
+		for(int j = 0; j < OAM_sprites.count; j++)
+		{
+			//check if current pixel falls within sprite's horizontal bounds
+			int16_t spriteX = sprites[j]->x - 8;
+			if(!(spriteX <= i && i <= spriteX + 7))
+				continue;
+
+			//get tile index, reset bit 0 in case of 8x16 mode
+			uint8_t tileIndex = sprites[j]->tileIndex;
+			uint8_t spriteHeight = LCDC & 0x04 ? 16 : 8;
+			if(spriteHeight == 16)
+				tileIndex &= 0xFE;
+
+			//get row inside tile that current pixel is in
+			uint8_t tileY = LY - (sprites[j]->y - 16);
+
+			//check vertical flipping (Y-flip)
+			if(sprites[j]->attr & 0x40)
+				tileY = (spriteHeight - 1) - tileY;
+
+			//get 2bpp
+			uint16_t tileDataAddr = 0x8000 + (tileIndex * 16) + (tileY * 2);
+			uint8_t lowByte = gb.sysbus[tileDataAddr];
+			uint8_t highByte = gb.sysbus[tileDataAddr + 1];
+
+			//check horizontal flip (X-flip)
+			uint8_t tileX = i - spriteX;
+			uint8_t bitPosition = (sprites[j]->attr & 0x20) ? tileX : (7 - tileX);
+
+			//extract 2bpp data
+			uint8_t highBit = (highByte >> bitPosition) & 0x01;
+			uint8_t lowBit = (lowByte >> bitPosition) & 0x01;
+			uint8_t colorIndex = (highBit << 1) | lowBit;
+
+			//check transparency of pixel
+			if(!colorIndex)
+				continue;
+
+			//compare with best X
+			if(sprites[j]->x < bestX)
+			{
+				bestX = sprites[j]->x;
+				bestSprite = sprites[j];
+				bestColorIndex = colorIndex;
+			}
+		}
+
+		//if no sprites were overlapping on this pixel, skip
+		if(!bestSprite)
+			continue;
+
+		//check priority
+		uint8_t priority = bestSprite->attr >> 7;
+		uint8_t *currBgLine = gb.frameBuffer + LY * 160;
+		uint8_t currBgColor = currBg[i];
+		//if background is enabled and current pixel's bg color has priority over sprite, skip drawing sprite
+		if((LCDC & 0x01) && priority && (currBgColor != 0))
+			continue;
+
+		//write pixel to framebuffer
+		uint8_t palette = bestSprite->attr & 0x10 ? gb.sysbus[OBP1_ADDR] : gb.sysbus[OBP0_ADDR];
+		uint8_t color = (palette >> (bestColorIndex * 2)) & 0x03;
+		gb.frameBuffer[LY * 160 + i] = color;
+	}
 }
