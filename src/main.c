@@ -17,6 +17,7 @@ int main(int argc, char **argv)
 	SDL_Window *window = SDL_CreateWindow("Game Boy", 160 * 5, 144 * 5, 0);
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, 0);
 	SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 160, 144);
+	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 	SDL_Event event;
 	int running = 1;
 
