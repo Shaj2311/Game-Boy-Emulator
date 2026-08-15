@@ -39,18 +39,24 @@ const uint8_t bootROM[256] =
 	0x21, 0x04, 0x01, 0x11, 0xA8, 0x00, 0x1A, 0x13, 0xBE, 0x20, 0xFE, 0x23, 0x7D, 0xFE, 0x34, 0x20,
 	0xF5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xFB, 0x86, 0x20, 0xFE, 0x3E, 0x01, 0xE0, 0x50
 };
-const GB_RGBA RGBA[4] = {
-	{15, 56, 15, 1},
-	{48, 98, 48, 1},
-	{139, 172, 15, 1},
-	{155, 188, 15, 1}
+//const GB_RGBA RGBA[4] = {
+//	{15, 56, 15, 1},
+//	{48, 98, 48, 1},
+//	{139, 172, 15, 1},
+//	{155, 188, 15, 1}
+//};
+const uint32_t RGBA[4] = {
+	0x9BBC0FFF,
+	0x8BAC0FFF,
+	0x306230FF,
+	0x0F380FFF
 };
 char *rom;
 
-uint8_t ppu_lookup_shade_index(uint8_t code, uint8_t paletteReg)
+uint32_t ppu_lookup_RGBA(uint8_t colorIndex, uint8_t paletteReg)
 {
-	//get shade index
-	return (paletteReg >> (code * 2)) & 0x03;
+	uint8_t shadeIndex = (paletteReg >> (colorIndex * 2)) & 0x03;
+	return RGBA[shadeIndex];
 }
 
 void gb_boot()
@@ -98,9 +104,9 @@ void gb_boot()
 	gb.sysbus[STAT_ADDR] = (gb.sysbus[STAT_ADDR] & 0xFC) | PPU_MODE_OAM_SEARCH;
 
 	//clean framebuffer
-	uint8_t white = ppu_lookup_shade_index(0, gb.sysbus[OBP0_ADDR]);
+	uint32_t whiteRGBA = ppu_lookup_RGBA(0, gb.sysbus[OBP0_ADDR]);
 	for(int i = 0; i < 144 * 160; i++)
-		gb.frameBuffer[i] = white;
+		gb.frameBuffer[i] = whiteRGBA;
 	//no lines rendered yet
 	gb.windowLinesRendered = 0;
 }
@@ -837,9 +843,9 @@ void ppu_pixel_transfer()
 	if(!(LCDC & 0x80))
 	{
 		//reset screen to white
-		uint32_t white = ppu_lookup_shade_index(0, gb.sysbus[BGP_ADDR]);
+		uint32_t whiteRGBA = ppu_lookup_RGBA(0, gb.sysbus[BGP_ADDR]);
 		for(int x = 0; x < 160; x++)
-			gb.frameBuffer[Y * 160 + x] = white;
+			gb.frameBuffer[Y * 160 + x] = whiteRGBA;
 		return;
 	}
 
@@ -879,7 +885,7 @@ void ppu_pixel_transfer()
 	uint8_t BGP = gb.sysbus[BGP_ADDR];
 	for(int x = 0; x < 160; x++)
 	{
-		gb.frameBuffer[Y * 160 + x] = ppu_lookup_shade_index(currBg[x], BGP);
+		gb.frameBuffer[Y * 160 + x] = ppu_lookup_RGBA(currBg[x], BGP);
 	}
 
 	//render sprites
@@ -1065,7 +1071,6 @@ void ppu_pix_trans_sprites(OAM_Result OAM_sprites, uint8_t LCDC, uint8_t *currBg
 
 		//write pixel to framebuffer
 		uint8_t palette = bestSprite->attr & 0x10 ? gb.sysbus[OBP1_ADDR] : gb.sysbus[OBP0_ADDR];
-		uint8_t color = (palette >> (bestColorIndex * 2)) & 0x03;
-		gb.frameBuffer[LY * 160 + i] = color;
+		gb.frameBuffer[LY * 160 + i] = ppu_lookup_RGBA(bestColorIndex, palette);
 	}
 }

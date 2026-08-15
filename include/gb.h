@@ -56,7 +56,7 @@ typedef struct
 	PPU_Mode ppu_mode;
 
 	//Frame Buffer
-	uint8_t frameBuffer[160 * 144];
+	uint32_t frameBuffer[160 * 144];
 
 	//Window line counter
 	uint8_t windowLinesRendered;
@@ -75,7 +75,8 @@ typedef struct
 
 extern const uint8_t bootROM[256];
 extern GameBoy gb;
-extern const GB_RGBA RGBA[4];
+//extern const GB_RGBA RGBA[4];
+extern const uint32_t RGBA[4];
 
 void gb_boot();
 void gb_load_cartridge(const char *cartridge);
@@ -96,5 +97,5 @@ void ppu_pix_trans_bg(uint8_t X, uint8_t Y, uint8_t SCX, uint8_t SCY, uint8_t LC
 void ppu_pix_trans_win(uint8_t X, uint8_t Y, uint8_t WX, uint8_t WY, uint8_t LCDC, uint16_t winTileMapAddr, uint8_t *currBg);
 void ppu_pix_trans_sprites(OAM_Result sprites, uint8_t LCDC, uint8_t *currBg);
 
-uint8_t ppu_lookup_shade_index(uint8_t code, uint8_t paletteReg);
+uint32_t ppu_lookup_RGBA(uint8_t code, uint8_t paletteReg);
 #endif

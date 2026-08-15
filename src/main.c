@@ -11,6 +11,15 @@
 
 int main(int argc, char **argv)
 {
+	SDL_Init(SDL_INIT_VIDEO);
+
+	//Create window
+	SDL_Window *window = SDL_CreateWindow("Game Boy", 160 * 5, 144 * 5, 0);
+	SDL_Renderer *renderer = SDL_CreateRenderer(window, 0);
+	SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 160, 144);
+	SDL_Event event;
+	int running = 1;
+
 	//ignore args for now
 	(void)argc;
 	(void)argv;
@@ -23,8 +32,23 @@ int main(int argc, char **argv)
 
 	puts("Executing cartridge...");
 	//FDE cycle
-	while(1)
+	while(running)
 	{
+		//Poll events
+		while(SDL_PollEvent(&event))
+		{
+			switch(event.type)
+			{
+				case SDL_EVENT_QUIT:
+					running = 0;
+					break;
+				case SDL_EVENT_KEY_DOWN:
+					if(event.key.scancode == SDL_SCANCODE_ESCAPE)
+						running = 0;
+					break;
+			}
+		}
+
 		//reset rendered window lines counter (required by PPU to draw window)
 		gb.windowLinesRendered = 0;
 
@@ -73,16 +97,24 @@ int main(int argc, char **argv)
 			cycles += currCycles;
 		}
 
-		//get end ticks
-		uint64_t endTicks = SDL_GetPerformanceCounter();
-
-		//calculate delta
-		double msDelta = ((double)(endTicks - startTicks) / sdlPerfFreq) * 1000;
+		//render
+		SDL_UpdateTexture(texture, 0, gb.frameBuffer, 160 * sizeof(uint32_t));
+		SDL_RenderClear(renderer);
+		SDL_RenderTexture(renderer, texture, 0, 0);
+		SDL_RenderPresent(renderer);
 
 		//apply frame pacing
+		uint64_t endTicks = SDL_GetPerformanceCounter();
+		double msDelta = ((double)(endTicks - startTicks) / sdlPerfFreq) * 1000;
 		if(msDelta < GB_MS_PER_FRAME)
 			SDL_Delay((uint32_t)(GB_MS_PER_FRAME - msDelta));
+
 		//apply spin wait for higher precision pacing
 		while(((double)(SDL_GetPerformanceCounter() - startTicks) / sdlPerfFreq) * 1000 < GB_MS_PER_FRAME);
 	}
+
+	puts("Exiting...");
+	SDL_DestroyWindow(window);
+	SDL_DestroyRenderer(renderer);
+	return 0;
 }
