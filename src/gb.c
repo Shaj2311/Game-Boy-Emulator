@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/01-special.gb"
+#define DBG_CARTRIDGE "roms/03-op sp,hl.gb"
 
 #define LCDC_ADDR 0xFF40
 #define STAT_ADDR 0xFF41
@@ -281,6 +281,9 @@ uint8_t gb_execute(uint8_t instruction)
 						case 0b000:
 							nop();
 							return 4;
+						case 0b001:
+							ld_IMM16_sp();
+							return 20;
 						case 0b010:
 							stop();
 							return 8;
