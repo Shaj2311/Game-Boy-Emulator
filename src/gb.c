@@ -207,7 +207,7 @@ void gb_load_cartridge(const char *cartridge)
 	puts("Cartridge loaded successfully");
 }
 
-void gb_service_interrupts()
+uint8_t gb_service_interrupts()
 {
 	//get IE and IF
 	uint8_t IE = mmu_read(0xFFFF);
@@ -219,7 +219,7 @@ void gb_service_interrupts()
 
 	//check master interrupt enable
 	if(!gb.IME)
-		return;
+		return 0;
 
 	//check each interrupt enable
 	for(int i = 0; i <= 4; i++)
@@ -244,6 +244,7 @@ void gb_service_interrupts()
 
 		//advance timer ticks
 		gb_timer_tick(20);
+		ppu_timer_tick(20);
 
 		//reset IF bit
 		gb.sysbus[0xFF0F] &= ~(0x01 << i);
@@ -252,8 +253,10 @@ void gb_service_interrupts()
 		gb.IME = 0;
 
 		//don't service any other interrupts
-		break;
+		return 20;
 	}
+
+	return 0;
 }
 
 uint8_t gb_execute(uint8_t instruction)

@@ -73,13 +73,20 @@ int main(int argc, char **argv)
 			}
 
 			//service interrupts
-			gb_service_interrupts();
+			uint8_t interruptCycles = gb_service_interrupts();
 
 			//check if halted
-			uint8_t currCycles;
-			if(gb.halted)
+			uint8_t currCycles = 0;
+			if(interruptCycles > 0)
 			{
+				currCycles = interruptCycles;
+			}
+			else if(gb.halted)
+			{
+				//halt for 4 cycles
 				currCycles = 4;
+				gb_timer_tick(4);
+				ppu_timer_tick(4);
 			}
 			else
 			{
@@ -87,12 +94,12 @@ int main(int argc, char **argv)
 				uint8_t instruction = mmu_read(gb.PC++);
 
 				//execute instruction
-				currCycles = gb_execute(instruction);
-			}
+				currCycles += gb_execute(instruction);
 
-			//advance cycle count
-			gb_timer_tick(currCycles);
-			ppu_timer_tick(currCycles);
+				//advance cycle count
+				gb_timer_tick(currCycles);
+				ppu_timer_tick(currCycles);
+			}
 
 			//advance total cycles executed in this frame
 			cycles += currCycles;
