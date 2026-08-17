@@ -77,11 +77,11 @@ int main(int argc, char **argv)
 				gb.IME_scheduled = 2;
 			}
 
-			//service interrupts
-			uint8_t interruptCycles = gb_service_interrupts();
-
 			//DEBUG
 			dbgLogState(logFile);
+
+			//service interrupts
+			uint8_t interruptCycles = gb_service_interrupts();
 
 			//check if halted
 			uint8_t currCycles = 0;

@@ -222,6 +222,8 @@ void scf()
 {
 	//set carry flag
 	gb.F |= 0x10;
+	//unset subtract, half-carry flag
+	gb.F &= 0b10011111;
 }
 
 void ccf()
