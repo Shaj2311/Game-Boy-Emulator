@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/03-op sp,hl.gb"
+#define DBG_CARTRIDGE "roms/cpu_instrs.gb"
 
 #define LCDC_ADDR 0xFF40
 #define STAT_ADDR 0xFF41
@@ -464,7 +464,7 @@ uint8_t gb_execute(uint8_t instruction)
 						case 0b001:
 							//prefix
 							//get next instruction
-							instruction = mmu_read(++gb.PC);
+							instruction = mmu_read(gb.PC++);
 							//parse params
 							r8 = instruction & 0x07;
 							uint8_t b3 = (instruction >> 3) & 0x07;
@@ -576,6 +576,10 @@ uint8_t gb_execute(uint8_t instruction)
 
 uint8_t mmu_read(uint16_t addr)
 {
+	//DEBUG: Return 0x90 when reading from LY
+	if(addr == LY_ADDR)
+		return 0x90;
+
 	//reading from boot ROM
 	if(addr < 0x0100)
 	{
