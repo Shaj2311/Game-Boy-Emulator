@@ -88,14 +88,14 @@ void gb_load_cartridge(const char *cartridge);
 uint8_t gb_service_interrupts();
 uint8_t gb_execute(uint8_t instruction);
 void gb_exit_invalid_opcode(uint8_t instruction);
-void gb_timer_tick(uint8_t cycles);
+void gb_timer_tick();
 
 uint8_t mmu_read(uint16_t addr);
 void mmu_write(uint16_t addr, uint8_t val);
 
 void ppu_set_mode(PPU_Mode mode);
 void ppu_set_LY(uint8_t LY);
-void ppu_timer_tick(uint16_t cycles);
+void ppu_timer_tick();
 OAM_Result ppu_oam_search();
 void ppu_pixel_transfer();
 void ppu_pix_trans_bg(uint8_t X, uint8_t Y, uint8_t SCX, uint8_t SCY, uint8_t LCDC, uint16_t bgTileMapAddr, uint8_t *currBg);

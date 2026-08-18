@@ -77,9 +77,6 @@ int main(int argc, char **argv)
 				gb.IME_scheduled = 2;
 			}
 
-			//DEBUG
-			dbgLogState(logFile);
-
 			//service interrupts
 			uint8_t interruptCycles = gb_service_interrupts();
 
@@ -93,21 +90,25 @@ int main(int argc, char **argv)
 			{
 				//halt for 4 cycles
 				currCycles = 4;
-				gb_timer_tick(4);
-				ppu_timer_tick(4);
 			}
 			else
 			{
+				//DEBUG
+				//dbgLogState(logFile);
+
 				//get instruction
 				uint8_t instruction = mmu_read(gb.PC++);
 
 				//execute instruction
 				currCycles += gb_execute(instruction);
 
-				//advance cycle count
-				gb_timer_tick(currCycles);
-				ppu_timer_tick(currCycles);
+			}
 
+			//advance cycle count
+			for(int i = 0; i < currCycles; i++)
+			{
+				gb_timer_tick();
+				ppu_timer_tick();
 			}
 
 			//advance total cycles executed in this frame

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/02-interrupts.gb"
+#define DBG_CARTRIDGE "roms/cpu_instrs.gb"
 
 #define LCDC_ADDR 0xFF40
 #define STAT_ADDR 0xFF41
@@ -68,17 +68,17 @@ void gb_boot()
 	gb.SP = 0xFFFE;
 	gb.PC = 0;
 
-	//DEBUG: Skip boot ROM
-	gb.PC = 0x100;
-	gb.SP = 0xFFFE;
-	gb.A  = 0x01;
-	gb.F  = 0xB0;
-	gb.B  = 0x00;
-	gb.C  = 0x13;
-	gb.D  = 0x00;
-	gb.E  = 0xD8;
-	gb.H  = 0x01;
-	gb.L  = 0x4D;
+	////DEBUG: Skip boot ROM
+	//gb.PC = 0x100;
+	//gb.SP = 0xFFFE;
+	//gb.A  = 0x01;
+	//gb.F  = 0xB0;
+	//gb.B  = 0x00;
+	//gb.C  = 0x13;
+	//gb.D  = 0x00;
+	//gb.E  = 0xD8;
+	//gb.H  = 0x01;
+	//gb.L  = 0x4D;
 
 	//reset boot ROM mapping control
 	gb.sysbus[0xFF50] = 0;
@@ -241,10 +241,6 @@ uint8_t gb_service_interrupts()
 
 		//jump to service routine
 		gb.PC = targetAddr;
-
-		//advance timer ticks
-		gb_timer_tick(20);
-		ppu_timer_tick(20);
 
 		//reset IF bit
 		gb.sysbus[0xFF0F] &= ~(0x01 << i);
@@ -576,9 +572,9 @@ uint8_t gb_execute(uint8_t instruction)
 
 uint8_t mmu_read(uint16_t addr)
 {
-	//DEBUG: Return 0x90 when reading from LY
-	if(addr == LY_ADDR)
-		return 0x90;
+	////DEBUG: Return 0x90 when reading from LY
+	//if(addr == LY_ADDR)
+	//	return 0x90;
 
 	//reading from boot ROM
 	if(addr < 0x0100)
@@ -732,11 +728,11 @@ void mmu_write(uint16_t addr, uint8_t val)
 
 }
 
-void gb_timer_tick(uint8_t cycles)
+void gb_timer_tick()
 {
 	//update system clock
 	uint16_t oldClock = gb.clock;
-	gb.clock += cycles;
+	gb.clock++; //tick by 1 cycle
 	uint16_t newClock = gb.clock;
 
 	//update DIV (high byte of system clock)
@@ -749,7 +745,7 @@ void gb_timer_tick(uint8_t cycles)
 	//if TIMA increment is enabled,
 	if(TAC & 0x04)
 	{
-		uint8_t TIMA = mmu_read(0xFF05);
+		uint8_t TIMA = gb.sysbus[0xFF05];
 		uint16_t bitmask;
 		//increment TIMA depending on clock select
 		switch(clockSelect)
@@ -768,13 +764,13 @@ void gb_timer_tick(uint8_t cycles)
 				break;
 		}
 		//check falling edge and increment TIMA
-		if((oldClock & bitmask) && !(newClock & bitmask))
+		if((oldClock & bitmask) && !(newClock & bitmask) && (TAC & 0x04))
 		{
 			TIMA++;
 			//check TIMA overflow, reset to TMA value, request timer interrupt
 			if(!TIMA)
 			{
-				gb.sysbus[0xFF05] = mmu_read(0xFF06);
+				gb.sysbus[0xFF05] = gb.sysbus[0xFF06];
 				gb.sysbus[0xFF0F] |= 0x04;
 			}
 			else
@@ -831,10 +827,10 @@ void ppu_set_LY(uint8_t LY)
 		gb.sysbus[STAT_ADDR] &= ~(0X04);
 }
 
-void ppu_timer_tick(uint16_t cycles)
+void ppu_timer_tick()
 {
 	//get LCD control
-	uint8_t LCDC = mmu_read(0xFF40);
+	uint8_t LCDC = gb.sysbus[0xFF40];
 	//check LDC and PPU enable
 	if(!(LCDC >> 7))
 	{
@@ -850,8 +846,8 @@ void ppu_timer_tick(uint16_t cycles)
 		return;
 	}
 
-	gb.ppu_cycles += cycles;
-	uint8_t LY = mmu_read(LY_ADDR);
+	gb.ppu_cycles++; //tick by 1 cycle
+	uint8_t LY = gb.sysbus[LY_ADDR];
 	if(LY < 144)
 	{
 		if(gb.ppu_cycles <= 79)
@@ -947,10 +943,8 @@ OAM_Result ppu_oam_search()
 		Sprite *ptr = (Sprite *)(gb.sysbus + addr);
 		//compare Y with LY
 		if(LY + 16 >= ptr->y && LY + 16 < ptr->y + spriteHeight)
-		{
 			result.sprites[result.count++] = ptr;
-			result.count++;
-		}
+
 		addr += sizeof(Sprite);
 	}
 
