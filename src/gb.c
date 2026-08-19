@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/mem_timing.gb"
+#define DBG_CARTRIDGE "roms/interrupt_time.gb"
 
 #define LCDC_ADDR 0xFF40
 #define STAT_ADDR 0xFF41
@@ -105,6 +105,9 @@ void gb_boot()
 	gb.IME = 0;
 	//do not enable interrupts
 	gb.IME_scheduled = 0;
+
+	//do not reset TIMA
+	gb.TIMA_scheduled = 0;
 
 	gb.ppu_cycles = 0;
 	//start with OAM search
@@ -722,6 +725,17 @@ void mmu_write(uint16_t addr, uint8_t val)
 		ppu_set_LY(gb.sysbus[LY_ADDR]);
 	}
 
+	//writing to TIMA
+	else if(addr == 0xFF05)
+	{
+		//override scheduled TIMA reset
+		if(gb.TIMA_scheduled)
+			gb.TIMA_scheduled = 0;
+
+		gb.sysbus[addr] = val;
+
+	}
+
 	//writing to TAC
 	else if(addr == 0xFF07)
 	{
@@ -757,10 +771,10 @@ void mmu_write(uint16_t addr, uint8_t val)
 		{
 			uint8_t TIMA = gb.sysbus[0xFF05];
 			TIMA++;
-			//check TIMA overflow, reset to TMA value, request timer interrupt
+			//check TIMA overflow, trigger reset, request timer interrupt
 			if(!TIMA)
 			{
-				gb.sysbus[0xFF05] = gb.sysbus[0xFF06];
+				gb.TIMA_scheduled = 4;
 				gb.sysbus[0xFF0F] |= 0x04;
 			}
 			else
@@ -786,6 +800,14 @@ void gb_timer_tick()
 	gb.sysbus[0xFF04] = newClock >> 8;
 
 	//update TIMA
+	//check TIMA update scheduled (check transition 1->0)
+	if(gb.TIMA_scheduled)
+	{
+		gb.TIMA_scheduled--;
+		if(gb.TIMA_scheduled == 0)
+			gb.sysbus[0xFF05] = gb.sysbus[0xFF06]; //reset to TMA
+	}
+
 	//check TAC
 	uint8_t TAC = mmu_read(0xFF07);
 	uint8_t clockSelect = TAC & 3;
@@ -814,10 +836,10 @@ void gb_timer_tick()
 		if((oldClock & bitmask) && !(newClock & bitmask) && (TAC & 0x04))
 		{
 			TIMA++;
-			//check TIMA overflow, reset to TMA value, request timer interrupt
+			//check TIMA overflow, trigger reset, request timer interrupt
 			if(!TIMA)
 			{
-				gb.sysbus[0xFF05] = gb.sysbus[0xFF06];
+				gb.TIMA_scheduled = 4;
 				gb.sysbus[0xFF0F] |= 0x04;
 			}
 			else

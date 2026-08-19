@@ -49,6 +49,9 @@ typedef struct
 	//IME scheduled (EI)
 	uint8_t IME_scheduled;
 
+	//TIMA reload delay
+	uint8_t TIMA_scheduled;
+
 	//PPU Details
 	uint16_t ppu_cycles;
 	PPU_Mode ppu_mode;
