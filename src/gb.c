@@ -710,6 +710,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 			{
 				gb.TIMA_scheduled = 4;
 				gb.sysbus[0xFF0F] |= 0x04;
+				gb.sysbus[0xFF05] = 0x00;
 			}
 			else
 				gb.sysbus[0xFF05] = TIMA;
@@ -826,6 +827,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 			{
 				gb.TIMA_scheduled = 4;
 				gb.sysbus[0xFF0F] |= 0x04;
+				gb.sysbus[0xFF05] = 0x00;
 			}
 			else
 				gb.sysbus[0xFF05] = TIMA;
@@ -891,6 +893,7 @@ void gb_timer_tick()
 			{
 				gb.TIMA_scheduled = 4;
 				gb.sysbus[0xFF0F] |= 0x04;
+				gb.sysbus[0xFF05] = 0x00;
 			}
 			else
 				gb.sysbus[0xFF05] = TIMA;

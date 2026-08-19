@@ -15,7 +15,6 @@ void halt()
 	if(!gb.IME && (mmu_read(0xFFFF) & mmu_read(0xFF0F) & 0x1F))
 	{
 		gb.halted = 0;
-		gb.PC--;
 	}
 	else
 		gb.halted = 1;
