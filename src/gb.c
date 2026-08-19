@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/cpu_instrs.gb"
+#define DBG_CARTRIDGE "roms/mem_timing.gb"
 
 #define LCDC_ADDR 0xFF40
 #define STAT_ADDR 0xFF41
@@ -721,6 +721,53 @@ void mmu_write(uint16_t addr, uint8_t val)
 		gb.sysbus[LYC_ADDR] = val;
 		ppu_set_LY(gb.sysbus[LY_ADDR]);
 	}
+
+	//writing to TAC
+	else if(addr == 0xFF07)
+	{
+		//compute old AND gate output
+		uint8_t oldTAC = gb.sysbus[0xFF07];
+		uint16_t oldClockBit;
+		switch(oldTAC & 3)
+		{
+			case 0b00: oldClockBit = 512; break;
+			case 0b01: oldClockBit = 8; break;
+			case 0b10: oldClockBit = 32; break;
+			case 0b11: oldClockBit = 128; break;
+		}
+		uint8_t oldOutput = (oldTAC & 0x04) && (gb.clock & oldClockBit);
+
+		//write to TAC
+		gb.sysbus[addr] = val;
+
+		//compute new AND gate output
+		uint8_t newTAC = val;
+		uint16_t newClockBit;
+		switch(newTAC & 3)
+		{
+			case 0b00: newClockBit = 512; break;
+			case 0b01: newClockBit = 8; break;
+			case 0b10: newClockBit = 32; break;
+			case 0b11: newClockBit = 128; break;
+		}
+		uint8_t newOutput = (newTAC & 0x04) && (gb.clock & newClockBit);
+
+		//check falling edge and increment TIMA
+		if(oldOutput == 1 && newOutput == 0)
+		{
+			uint8_t TIMA = gb.sysbus[0xFF05];
+			TIMA++;
+			//check TIMA overflow, reset to TMA value, request timer interrupt
+			if(!TIMA)
+			{
+				gb.sysbus[0xFF05] = gb.sysbus[0xFF06];
+				gb.sysbus[0xFF0F] |= 0x04;
+			}
+			else
+				gb.sysbus[0xFF05] = TIMA;
+		}
+	}
+
 
 	//writing normally
 	else
