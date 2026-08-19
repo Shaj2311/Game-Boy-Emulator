@@ -109,6 +109,9 @@ void gb_boot()
 	//do not reset TIMA
 	gb.TIMA_scheduled = 0;
 
+	//initialize old STAT interrupt state
+	gb.STAT_old_int = 0;
+
 	gb.ppu_cycles = 0;
 	//start with OAM search
 	gb.ppu_mode = PPU_MODE_OAM_SEARCH;
@@ -669,9 +672,48 @@ void mmu_write(uint16_t addr, uint8_t val)
 	//writing to DIV register
 	else if(addr == 0xFF04)
 	{
+		//compute old AND gate output
+		uint8_t oldTAC = gb.sysbus[0xFF07];
+		uint16_t oldClockBit;
+		switch(oldTAC & 3)
+		{
+			case 0b00: oldClockBit = 512; break;
+			case 0b01: oldClockBit = 8; break;
+			case 0b10: oldClockBit = 32; break;
+			case 0b11: oldClockBit = 128; break;
+		}
+		uint8_t oldOutput = (oldTAC & 0x04) && (gb.clock & oldClockBit);
+
 		//reset system clock
 		gb.clock = 0;
 		gb.sysbus[addr] = 0;
+
+		//compute new AND gate output
+		uint8_t newTAC = val;
+		uint16_t newClockBit;
+		switch(newTAC & 3)
+		{
+			case 0b00: newClockBit = 512; break;
+			case 0b01: newClockBit = 8; break;
+			case 0b10: newClockBit = 32; break;
+			case 0b11: newClockBit = 128; break;
+		}
+		uint8_t newOutput = (newTAC & 0x04) && (gb.clock & newClockBit);
+
+		//check falling edge and increment TIMA
+		if(oldOutput == 1 && newOutput == 0)
+		{
+			uint8_t TIMA = gb.sysbus[0xFF05];
+			TIMA++;
+			//check TIMA overflow, trigger reset, request timer interrupt
+			if(!TIMA)
+			{
+				gb.TIMA_scheduled = 4;
+				gb.sysbus[0xFF0F] |= 0x04;
+			}
+			else
+				gb.sysbus[0xFF05] = TIMA;
+		}
 	}
 
 	//writing to WRAM (write to echo RAM as well)
@@ -716,6 +758,14 @@ void mmu_write(uint16_t addr, uint8_t val)
 		uint8_t new = (old & 0x07) | (val & 0x78) | 0x80;
 		//write new value
 		gb.sysbus[addr] = new;
+
+		//request STAT interrupt if needed
+		uint8_t STAT_curr_int = getSTATint();
+		if(gb.STAT_old_int == 0 && STAT_curr_int == 1)
+		{
+			gb.sysbus[0xFF0F] |= 0x02;
+		}
+		gb.STAT_old_int = STAT_curr_int;
 	}
 
 	//writing to LYC (that'll change the LYC==LY condition)
@@ -833,7 +883,7 @@ void gb_timer_tick()
 				break;
 		}
 		//check falling edge and increment TIMA
-		if((oldClock & bitmask) && !(newClock & bitmask) && (TAC & 0x04))
+		if((oldClock & bitmask) && !(newClock & bitmask))
 		{
 			TIMA++;
 			//check TIMA overflow, trigger reset, request timer interrupt
@@ -861,13 +911,12 @@ void ppu_set_mode(PPU_Mode mode)
 	gb.sysbus[STAT_ADDR] = (gb.sysbus[STAT_ADDR] & 0xFC) | mode;
 
 	//request STAT interrupt on mode transition (except pixel transfer mode)
-	if(
-		mode != PPU_MODE_PIX_TRANS &&
-		(gb.sysbus[STAT_ADDR] >> (mode + 3)) & 0x01
-		)
+	uint8_t STAT_curr_int = getSTATint();
+	if(gb.STAT_old_int == 0 && STAT_curr_int == 1)
 	{
 		gb.sysbus[0xFF0F] |= 0x02;
 	}
+	gb.STAT_old_int = STAT_curr_int;
 
 	//execute current PPU mode
 	if(gb.ppu_mode != oldMode)
@@ -889,8 +938,12 @@ void ppu_set_LY(uint8_t LY)
 	{
 		gb.sysbus[STAT_ADDR] |= 0x04;
 		//request STAT interrupt
-		if((gb.sysbus[STAT_ADDR] >> 6) & 0x01)
+		uint8_t STAT_curr_int = getSTATint();
+		if(gb.STAT_old_int == 0 && STAT_curr_int == 1)
+		{
 			gb.sysbus[0xFF0F] |= 0x02;
+		}
+		gb.STAT_old_int = STAT_curr_int;
 	}
 	else
 		gb.sysbus[STAT_ADDR] &= ~(0X04);
@@ -1265,5 +1318,33 @@ void ppu_pix_trans_sprites(OAM_Result OAM_sprites, uint8_t LCDC, uint8_t *currBg
 		//write pixel to framebuffer
 		uint8_t palette = bestSprite->attr & 0x10 ? gb.sysbus[OBP1_ADDR] : gb.sysbus[OBP0_ADDR];
 		gb.frameBuffer[LY * 160 + i] = ppu_lookup_RGBA(bestColorIndex, palette);
+	}
+}
+
+uint8_t getSTATint()
+{
+	uint8_t STAT = gb.sysbus[STAT_ADDR];
+
+	//check LYC == LY
+	if((STAT & 0x40) && (STAT & 0x04))
+		return 1;
+
+	//check all mode changes except pixel transfer
+	switch(gb.ppu_mode)
+	{
+		case 0:
+			if(STAT & 0x08)
+				return 1;
+			return 0;
+		case 1:
+			if(STAT & 0x10)
+				return 1;
+			return 0;
+		case 2:
+			if(STAT & 20)
+				return 1;
+			return 0;
+		default:
+			return 0;
 	}
 }

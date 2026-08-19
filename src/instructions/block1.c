@@ -12,7 +12,7 @@ uint8_t ld_r8_r8(uint8_t r8_1, uint8_t r8_2)
 
 void halt()
 {
-	if(!gb.IME && (mmu_read(0xFFFF) & mmu_read(0xFF0F)))
+	if(!gb.IME && (mmu_read(0xFFFF) & mmu_read(0xFF0F) & 0x1F))
 	{
 		gb.halted = 0;
 		gb.PC--;
