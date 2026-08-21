@@ -121,14 +121,17 @@ void cp_a_imm8()
 	if(subVal > oldA)
 		gb.F |= 0x10; //C = 1
 }
-uint8_t ret_cond(uint8_t cond)
+void ret_cond(uint8_t cond)
 {
-	if(is_cond_true(cond))
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
 	{
-		ret();
-		return 20;
+		gb_timer_tick();
+		ppu_timer_tick();
 	}
-	return 8;
+
+	if(is_cond_true(cond))
+		ret();
 }
 
 void ret()
@@ -138,6 +141,13 @@ void ret()
 	uint8_t low = mmu_read(gb.SP++);
 	uint8_t high = mmu_read(gb.SP++);
 	gb.PC = (high << 8) | low;
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 void reti()
@@ -148,7 +158,7 @@ void reti()
 	gb.IME = 1;
 }
 
-uint8_t jp_cond_imm16(uint8_t cond)
+void jp_cond_imm16(uint8_t cond)
 {
 	//get imm16
 	uint16_t imm16 = get_imm16();
@@ -158,15 +168,26 @@ uint8_t jp_cond_imm16(uint8_t cond)
 		//jump to imm16
 		gb.PC = imm16;
 
-		return 16;
+		//take extra internal tick
+		for(int i = 0; i < 4; i++)
+		{
+			gb_timer_tick();
+			ppu_timer_tick();
+		}
 	}
-	return 12;
 }
 
 void jp_imm16()
 {
 	//jump to imm16
 	gb.PC = get_imm16();
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 void jp_hl()
@@ -174,7 +195,7 @@ void jp_hl()
 	gb.PC = gb.HL;
 }
 
-uint8_t call_cond_imm16(uint8_t cond)
+void call_cond_imm16(uint8_t cond)
 {
 	//get imm16
 	uint16_t imm16 = get_imm16();
@@ -182,6 +203,13 @@ uint8_t call_cond_imm16(uint8_t cond)
 	//check condition
 	if(is_cond_true(cond))
 	{
+		//take extra internal tick
+		for(int i = 0; i < 4; i++)
+		{
+			gb_timer_tick();
+			ppu_timer_tick();
+		}
+
 		//call
 
 		//push address of instruction onto stack
@@ -190,16 +218,20 @@ uint8_t call_cond_imm16(uint8_t cond)
 
 		//jp imm16
 		gb.PC = imm16;
-
-		return 24;
 	}
-	return 12;
 }
 
 void call_imm16()
 {
 	//get imm16
 	uint16_t imm16 = get_imm16();
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 
 	//push address of instruction onto stack
 	mmu_write(--gb.SP, gb.PC >> 8);
@@ -211,6 +243,13 @@ void call_imm16()
 
 void rst_tgt3(uint8_t tgt3)
 {
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
+
 	//push address of instruction onto stack
 	mmu_write(--gb.SP, gb.PC >> 8);
 	mmu_write(--gb.SP, gb.PC & 0xFF);
@@ -238,6 +277,13 @@ void push_r16stk(uint16_t r16stk)
 {
 	//get register
 	uint16_t *reg = get_r16stk(r16stk);
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 
 	//push register value onto stack
 	mmu_write(--gb.SP, *reg >> 8);
@@ -296,6 +342,13 @@ void add_sp_imm8()
 		gb.F |= 0x20; //H = 1
 	if((oldSP & 0x00FF) + (uint8_t)offset > 0x00FF)
 		gb.F |= 0x10; //C = 1
+
+	//take 2 extra internal ticks
+	for(int i = 0; i < 8; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 void ld_hl_spPLUSimm8()
@@ -310,11 +363,25 @@ void ld_hl_spPLUSimm8()
 		gb.F |= 0x20; //H = 1
 	if((oldSP & 0x00FF) + (uint8_t)offset > 0x00FF)
 		gb.F |= 0x10; //C = 1
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 void ld_sp_hl()
 {
 	gb.SP = gb.HL;
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 void di()
@@ -475,31 +542,25 @@ void srl_r8(uint8_t r8)
 	gb.F |= 0x10 * lsb; //C = LSB
 }
 
-uint8_t bit_b3_r8(uint8_t b3, uint8_t r8)
+void bit_b3_r8(uint8_t b3, uint8_t r8)
 {
 	//reset Z,N,H
 	gb.F &= 0x10;
 	if(!((read_r8(r8) >> b3) & 0x01))
 		gb.F |= 0x80; //Z = 1
 	gb.F |= 0x20; // H = 1
-
-	return r8 == 6 ? 12 : 8;
 }
 
-uint8_t res_b3_r8(uint8_t b3, uint8_t r8)
+void res_b3_r8(uint8_t b3, uint8_t r8)
 {
 	uint8_t regval = read_r8(r8);
 	regval &= (~(0x01 << b3));
 	write_r8(r8, regval);
-
-	return r8 == 6 ? 16 : 8;
 }
 
-uint8_t set_b3_r8(uint8_t b3, uint8_t r8)
+void set_b3_r8(uint8_t b3, uint8_t r8)
 {
 	uint8_t regval = read_r8(r8);
 	regval |= (0x01 << b3);
 	write_r8(r8, regval);
-
-	return r8 == 6 ? 16 : 8;
 }

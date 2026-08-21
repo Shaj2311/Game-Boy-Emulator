@@ -61,8 +61,8 @@ int main(int argc, char **argv)
 		//get start ticks
 		uint64_t startTicks = SDL_GetPerformanceCounter();
 
-		uint32_t cycles = 0;
-		while(cycles < GB_CYCLES_PER_FRAME)
+		uint32_t frameStartClock = gb.clock;
+		while(gb.clock - frameStartClock < GB_CYCLES_PER_FRAME)
 		{
 			//check IME
 			if(gb.IME_scheduled == 2)
@@ -78,46 +78,29 @@ int main(int argc, char **argv)
 			}
 
 			//service interrupts
-			uint8_t interruptCycles = gb_service_interrupts();
+			gb_service_interrupts();
 
 			//check if halted
-			uint8_t currCycles = 0;
-			if(interruptCycles > 0)
+			if(gb.halted)
 			{
-				currCycles = interruptCycles;
-			}
-			else if(gb.halted)
-			{
-				//halt for 4 cycles
-				currCycles = 4;
-				for(int i = 0; i < currCycles; i++)
+				//halt for 1 M-cycle
+				for(int i = 0; i < 4; i++)
 				{
 					gb_timer_tick();
 					ppu_timer_tick();
 				}
-			}
-			else
-			{
-				//DEBUG
-				//dbgLogState(logFile);
 
-				//get instruction
-				uint8_t instruction = mmu_read(gb.PC++);
-
-				//execute instruction
-				currCycles += gb_execute(instruction);
-
+				continue;
 			}
 
-			////advance cycle count
-			//for(int i = 0; i < currCycles; i++)
-			//{
-			//	gb_timer_tick();
-			//	ppu_timer_tick();
-			//}
+			//DEBUG
+			//dbgLogState(logFile);
 
-			//advance total cycles executed in this frame
-			cycles += currCycles;
+			//get instruction
+			uint8_t instruction = mmu_read(gb.PC++);
+
+			//execute instruction
+			gb_execute(instruction);
 		}
 
 		//render

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/mem_timing/01-read_timing.gb"
+#define DBG_CARTRIDGE "roms/mem_timing/mem_timing.gb"
 
 #define LCDC_ADDR 0xFF40
 #define STAT_ADDR 0xFF41
@@ -207,7 +207,7 @@ void gb_load_cartridge(const char *cartridge)
 	puts("Cartridge loaded successfully");
 }
 
-uint8_t gb_service_interrupts()
+void gb_service_interrupts()
 {
 	//get IE and IF
 	uint8_t IE = gb.sysbus[0xFFFF];
@@ -219,7 +219,7 @@ uint8_t gb_service_interrupts()
 
 	//check master interrupt enable
 	if(!gb.IME)
-		return 0;
+		return;
 
 	//check each interrupt enable
 	for(int i = 0; i <= 4; i++)
@@ -270,13 +270,11 @@ uint8_t gb_service_interrupts()
 		gb.IME = 0;
 
 		//don't service any other interrupts
-		return 20;
+		return;
 	}
-
-	return 0;
 }
 
-uint8_t gb_execute(uint8_t instruction)
+void gb_execute(uint8_t instruction)
 {
 	//extract information
 	uint8_t r8 = (instruction >> 3) & 0x07;
@@ -296,20 +294,16 @@ uint8_t gb_execute(uint8_t instruction)
 					switch(r8)
 					{
 						case 0b000:
-							nop();
-							return 4;
+							nop(); break;
 						case 0b001:
-							ld_IMM16_sp();
-							return 20;
+							ld_IMM16_sp(); break;
 						case 0b010:
-							stop();
-							return 8;
+							stop(); break;
 						case 0b011:
-							jr_imm8();
-							return 12;
+							jr_imm8(); break;
 						default:
 							if(instruction & 0x20)
-								return jr_cond_imm8(cond);
+								jr_cond_imm8(cond);
 							else
 								gb_exit_invalid_opcode(instruction);
 							break;
@@ -319,41 +313,35 @@ uint8_t gb_execute(uint8_t instruction)
 					switch((instruction >> 3) & 0x01)
 					{
 						case 0:
-							ld_r16_imm16(r16);
-							return 12;
+							ld_r16_imm16(r16); break;
 						case 1:
-							add_hl_r16(r16);
-							return 8;
+							add_hl_r16(r16); break;
 					}
 					break;
 				case 0b010:
 					switch((instruction >> 3) & 0x01)
 					{
 						case 0:
-							ld_R16MEM_a(r16);
-							return 8;
+							ld_R16MEM_a(r16); break;
 						case 1:
-							ld_a_R16MEM(r16);
-							return 8;
+							ld_a_R16MEM(r16); break;
 					}
 					break;
 				case 0b011:
 					switch((instruction >> 3) & 0x01)
 					{
 						case 0:
-							inc_r16(r16);
-							return 8;
+							inc_r16(r16); break;
 						case 1:
-							dec_r16(r16);
-							return 8;
+							dec_r16(r16); break;
 					}
 					break;
 				case 0b100:
-					return inc_r8(r8);
+					inc_r8(r8); break;
 				case 0b101:
-					return dec_r8(r8);
+					dec_r8(r8); break;
 				case 0b110:
-					return ld_r8_imm8(r8);
+					ld_r8_imm8(r8); break;
 				case 0b111:
 					switch(r8)
 					{
@@ -366,50 +354,37 @@ uint8_t gb_execute(uint8_t instruction)
 						case 6: scf(); break;
 						case 7: ccf(); break;
 					}
-					return 4;
 			}
 			break;
 		case 0b01:
 			switch(instruction & 0x3F)
 			{
 				case 0b110110:
-					halt();
-					return 4;
+					halt(); break;
 				default:
-					return ld_r8_r8(r8, instruction & 0x07);
+					ld_r8_r8(r8, instruction & 0x07); break;
 			}
 			break;
 		case 0b10:
 			switch(r8)
 			{
 				case 0:
-					add_a_r8(srcReg);
-					break;
+					add_a_r8(srcReg); break;
 				case 1:
-					adc_a_r8(srcReg);
-					break;
+					adc_a_r8(srcReg); break;
 				case 2:
-					sub_a_r8(srcReg);
-					break;
+					sub_a_r8(srcReg); break;
 				case 3:
-					sbc_a_r8(srcReg);
-					break;
+					sbc_a_r8(srcReg); break;
 				case 4:
-					and_a_r8(srcReg);
-					break;
+					and_a_r8(srcReg); break;
 				case 5:
-					xor_a_r8(srcReg);
-					break;
+					xor_a_r8(srcReg); break;
 				case 6:
-					or_a_r8(srcReg);
-					break;
+					or_a_r8(srcReg); break;
 				case 7:
-					cp_a_r8(srcReg);
-					break;
+					cp_a_r8(srcReg); break;
 			}
-			if(srcReg == 6)
-				return 8;
-			return 4;
 			break;
 		case 0b11:
 			switch(instruction & 0x07)
@@ -418,66 +393,52 @@ uint8_t gb_execute(uint8_t instruction)
 					switch(r8)
 					{
 						case 0b100:
-							ldh_IMM8_a();
-							return 12;
+							ldh_IMM8_a(); break;
 						case 0b101:
-							add_sp_imm8();
-							return 16;
+							add_sp_imm8(); break;
 						case 0b110:
-							ldh_a_IMM8();
-							return 12;
+							ldh_a_IMM8(); break;
 						case 0b111:
-							ld_hl_spPLUSimm8();
-							return 12;
+							ld_hl_spPLUSimm8(); break;
 						default:
-							return ret_cond(cond);
+							ret_cond(cond); break;
 					}
 					break;
 				case 0b001:
 					switch(r8)
 					{
 						case 0b001:
-							ret();
-							return 16;
+							ret(); break;
 						case 0b011:
-							reti();
-							return 16;
+							reti(); break;
 						case 0b101:
-							jp_hl();
-							return 4;
+							jp_hl(); break;
 						case 0b111:
-							ld_sp_hl();
-							return 8;
+							ld_sp_hl(); break;
 						default:
-							pop_r16stk(r16);
-							return 12;
+							pop_r16stk(r16); break;
 					}
 					break;
 				case 0b010:
 					switch(r8)
 					{
 						case 0b100:
-							ldh_C_a();
-							return 8;
+							ldh_C_a(); break;
 						case 0b101:
-							ld_IMM16_a();
-							return 16;
+							ld_IMM16_a(); break;
 						case 0b110:
-							ldh_a_C();
-							return 8;
+							ldh_a_C(); break;
 						case 0b111:
-							ld_a_IMM16();
-							return 16;
+							ld_a_IMM16(); break;
 						default:
-							return jp_cond_imm16(cond);
+							jp_cond_imm16(cond); break;
 					}
 					break;
 				case 0b011:
 					switch(r8)
 					{
 						case 0b000:
-							jp_imm16();
-							return 16;
+							jp_imm16(); break;
 						case 0b001:
 							//prefix
 							//get next instruction
@@ -494,62 +455,46 @@ uint8_t gb_execute(uint8_t instruction)
 									switch(b3)
 									{
 										case 0:
-											rlc_r8(r8);
-											break;
+											rlc_r8(r8); break;
 										case 1:
-											rrc_r8(r8);
-											break;
+											rrc_r8(r8); break;
 										case 2:
-											rl_r8(r8);
-											break;
+											rl_r8(r8); break;
 										case 3:
-											rr_r8(r8);
-											break;
+											rr_r8(r8); break;
 										case 4:
-											sla_r8(r8);
-											break;
+											sla_r8(r8); break;
 										case 5:
-											sra_r8(r8);
-											break;
+											sra_r8(r8); break;
 										case 6:
-											swap_r8(r8);
-											break;
+											swap_r8(r8); break;
 										case 7:
-											srl_r8(r8);
-											break;
+											srl_r8(r8); break;
 									}
-									return r8 == 6 ? 16 : 8;
+									break;
 								case 1:
-									return bit_b3_r8(b3, r8);
+									bit_b3_r8(b3, r8); break;
 								case 2:
-									return res_b3_r8(b3, r8);
+									res_b3_r8(b3, r8); break;
 								case 3:
-									return set_b3_r8(b3, r8);
+									set_b3_r8(b3, r8); break;
 							}
 							break;
 						case 0b110:
-							di();
-							return 4;
+							di(); break;
 						case 0b111:
-							ei();
-							return 4;
+							ei(); break;
 						default:
 							gb_exit_invalid_opcode(instruction);
 					}
 					break;
 				case 0b100:
-					return call_cond_imm16(cond);
+					call_cond_imm16(cond); break;
 				case 0b101:
 					if(r8 == 0b001)
-					{
 						call_imm16();
-						return 24;
-					}
 					else if(((instruction >> 3) & 0x01) == 0)
-					{
 						push_r16stk(r16);
-						return 16;
-					}
 					else
 						gb_exit_invalid_opcode(instruction);
 					break;
@@ -557,38 +502,28 @@ uint8_t gb_execute(uint8_t instruction)
 					switch(r8)
 					{
 						case 0:
-							add_a_imm8();
-							break;
+							add_a_imm8(); break;
 						case 1:
-							adc_a_imm8();
-							break;
+							adc_a_imm8(); break;
 						case 2:
-							sub_a_imm8();
-							break;
+							sub_a_imm8(); break;
 						case 3:
-							sbc_a_imm8();
-							break;
+							sbc_a_imm8(); break;
 						case 4:
-							and_a_imm8();
-							break;
+							and_a_imm8(); break;
 						case 5:
-							xor_a_imm8();
-							break;
+							xor_a_imm8(); break;
 						case 6:
-							or_a_imm8();
-							break;
+							or_a_imm8(); break;
 						case 7:
-							cp_a_imm8();
-							break;
+							cp_a_imm8(); break;
 					}
-					return 8;
+					break;
 				case 0b111:
-					rst_tgt3(r8);
-					return 16;
+					rst_tgt3(r8); break;
 			}
 			break;
 	}
-	return 0;
 }
 
 uint8_t mmu_read(uint16_t addr)
@@ -659,13 +594,6 @@ uint8_t mmu_read(uint16_t addr)
 
 void mmu_write(uint16_t addr, uint8_t val)
 {
-	//tick timers 1 M-cycle
-	for(int i = 0; i < 4; i++)
-	{
-		gb_timer_tick();
-		ppu_timer_tick();
-	}
-
 	//writing to boot ROM switch
 	if(addr == 0xFF50)
 	{
@@ -868,6 +796,13 @@ void mmu_write(uint16_t addr, uint8_t val)
 	//writing normally
 	else
 		gb.sysbus[addr] = val;
+
+	//tick timers 1 M-cycle
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 void gb_timer_tick()

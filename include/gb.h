@@ -38,7 +38,7 @@ typedef struct
 	uint8_t sysbus[65536];
 
 	//system clock
-	uint16_t clock;
+	uint32_t clock;
 
 	//Halt flag
 	uint8_t halted;
@@ -91,8 +91,8 @@ extern const uint32_t RGBA[4];
 void gb_boot();
 void gb_init_cartridge_ram();
 void gb_load_cartridge(const char *cartridge);
-uint8_t gb_service_interrupts();
-uint8_t gb_execute(uint8_t instruction);
+void gb_service_interrupts();
+void gb_execute(uint8_t instruction);
 void gb_exit_invalid_opcode(uint8_t instruction);
 void gb_timer_tick();
 

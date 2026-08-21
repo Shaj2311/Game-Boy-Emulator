@@ -63,6 +63,13 @@ void inc_r16(uint8_t r16)
 
 	//increment value
 	(*reg)++;
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 void dec_r16(uint8_t r16)
@@ -72,6 +79,13 @@ void dec_r16(uint8_t r16)
 
 	//decrement value
 	(*reg)--;
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 void add_hl_r16(uint8_t r16)
@@ -92,11 +106,18 @@ void add_hl_r16(uint8_t r16)
 		gb.F |= 0x20; //H=1
 	if(overflow15)
 		gb.F |= 0x10; //C=1
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
 //r8 manipulation
 
-uint8_t inc_r8(uint8_t r8)
+void inc_r8(uint8_t r8)
 {
 	//save old value
 	uint8_t oldVal = read_r8(r8);
@@ -113,14 +134,9 @@ uint8_t inc_r8(uint8_t r8)
 
 	if((oldVal & 0x0F) + 1 > 0x0F)
 		gb.F |= 0x20; //H = 1
-
-	//return T-cycle count depending on r8
-	if(r8 == 6)
-		return 12;
-	return 4;
 }
 
-uint8_t dec_r8(uint8_t r8)
+void dec_r8(uint8_t r8)
 {
 	//save old value
 	uint8_t oldVal = read_r8(r8);
@@ -139,25 +155,15 @@ uint8_t dec_r8(uint8_t r8)
 
 	if((oldVal & 0x0F) == 0)
 		gb.F |= 0x20; //H = 1
-
-	//return T-cycle count depending on r8
-	if(r8 == 6)
-		return 12;
-	return 4;
 }
 
-uint8_t ld_r8_imm8(uint8_t r8)
+void ld_r8_imm8(uint8_t r8)
 {
 	//get imm8
 	uint8_t imm8 = mmu_read(gb.PC++);
 
 	//load value
 	write_r8(r8, imm8);
-
-	//return T-cycle count depending on r8
-	if(r8 == 6)
-		return 12;
-	return 8;
 }
 
 //hardcoded bit manip (reg A)
@@ -302,15 +308,27 @@ void jr_imm8()
 {
 	int8_t offset = mmu_read(gb.PC++);
 	gb.PC += offset;
+
+	//take extra internal tick
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
 }
 
-uint8_t jr_cond_imm8(uint8_t cond)
+void jr_cond_imm8(uint8_t cond)
 {
 	int8_t offset = mmu_read(gb.PC++);
 	if(is_cond_true(cond))
 	{
 		gb.PC += offset;
-		return 12;
+
+		//take extra internal tick
+		for(int i = 0; i < 4; i++)
+		{
+			gb_timer_tick();
+			ppu_timer_tick();
+		}
 	}
-	return 8;
 }

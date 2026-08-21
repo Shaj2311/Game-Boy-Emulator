@@ -5,7 +5,7 @@
 
 
 //helpers
-uint16_t *get_r16(uint8_t r16)
+void *get_r16(uint8_t r16)
 {
 	switch(r16)
 	{
@@ -23,7 +23,7 @@ uint16_t *get_r16(uint8_t r16)
 	}
 }
 
-uint16_t *get_r16mem(uint8_t r16mem, int *offset)
+void *get_r16mem(uint8_t r16mem, int *offset)
 {
 	*offset = 0;
 	switch(r16mem)
