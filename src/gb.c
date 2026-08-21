@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/interrupt_time.gb"
+#define DBG_CARTRIDGE "roms/mem_timing/01-read_timing.gb"
 
 #define LCDC_ADDR 0xFF40
 #define STAT_ADDR 0xFF41
@@ -39,12 +39,6 @@ const uint8_t bootROM[256] =
 	0x21, 0x04, 0x01, 0x11, 0xA8, 0x00, 0x1A, 0x13, 0xBE, 0x20, 0xFE, 0x23, 0x7D, 0xFE, 0x34, 0x20,
 	0xF5, 0x06, 0x19, 0x78, 0x86, 0x23, 0x05, 0x20, 0xFB, 0x86, 0x20, 0xFE, 0x3E, 0x01, 0xE0, 0x50
 };
-//const GB_RGBA RGBA[4] = {
-//	{15, 56, 15, 1},
-//	{48, 98, 48, 1},
-//	{139, 172, 15, 1},
-//	{155, 188, 15, 1}
-//};
 const uint32_t RGBA[4] = {
 	0x9BBC0FFF,
 	0x8BAC0FFF,
@@ -216,8 +210,8 @@ void gb_load_cartridge(const char *cartridge)
 uint8_t gb_service_interrupts()
 {
 	//get IE and IF
-	uint8_t IE = mmu_read(0xFFFF);
-	uint8_t IF = mmu_read(0xFF0F);
+	uint8_t IE = gb.sysbus[0xFFFF];
+	uint8_t IF = gb.sysbus[0xFF0F];
 
 	//check unhalt condition
 	if(gb.halted && (IE & IF & 0X1F))
@@ -241,9 +235,30 @@ uint8_t gb_service_interrupts()
 		//get address of service routine
 		uint16_t targetAddr = 0x40 + (8 * i);
 
+		//internal M-cycle tick 1
+		for(int i = 0; i < 4; i++)
+		{
+			gb_timer_tick();
+			ppu_timer_tick();
+		}
+
 		//push current address onto stack
 		mmu_write(--gb.SP, gb.PC >> 8);
 		mmu_write(--gb.SP, gb.PC & 0xFF);
+
+		//internal M-cycle tick 2
+		for(int i = 0; i < 4; i++)
+		{
+			gb_timer_tick();
+			ppu_timer_tick();
+		}
+
+		//internal M-cycle tick 3
+		for(int i = 0; i < 4; i++)
+		{
+			gb_timer_tick();
+			ppu_timer_tick();
+		}
 
 		//jump to service routine
 		gb.PC = targetAddr;
@@ -582,6 +597,7 @@ uint8_t mmu_read(uint16_t addr)
 	//if(addr == LY_ADDR)
 	//	return 0x90;
 
+	uint8_t val = gb.sysbus[addr];
 	//reading from boot ROM
 	if(addr < 0x0100)
 	{
@@ -589,12 +605,12 @@ uint8_t mmu_read(uint16_t addr)
 		if(gb.sysbus[0xFF50] == 0)
 		{
 			//read from boot ROM
-			return bootROM[addr];
+			val = bootROM[addr];
 		}
 	}
 
 	//reading from switchable ROM bank (0x4000 - 0x7FFF)
-	if(addr >= 0x4000 && addr <= 0x7FFF)
+	else if(addr >= 0x4000 && addr <= 0x7FFF)
 	{
 		uint8_t bank = gb.currRomBank;
 
@@ -613,11 +629,11 @@ uint8_t mmu_read(uint16_t addr)
 		//prevent out-of-bounds reads
 		offset %= gb.romSize;
 
-		return gb.rom[offset];
+		val = gb.rom[offset];
 	}
 
 	//reading from external cartridge RAM
-	if(addr >= 0xA000 && addr <= 0xBFFF)
+	else if(addr >= 0xA000 && addr <= 0xBFFF)
 	{
 		if(gb.ramEnable && gb.cartridgeRAM != 0)
 		{
@@ -625,16 +641,31 @@ uint8_t mmu_read(uint16_t addr)
 			uint32_t offset = (addr - 0xA000) + (ramBank * 0x2000);
 
 			if(offset < gb.cartridgeRamSize)
-				return gb.cartridgeRAM[offset];
+				val = gb.cartridgeRAM[offset];
 		}
-		return 0xFF;
+		else
+			val = 0xFF;
 	}
 
-	return gb.sysbus[addr];
+	//tick timers 1 M-cycle
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
+
+	return val;
 }
 
 void mmu_write(uint16_t addr, uint8_t val)
 {
+	//tick timers 1 M-cycle
+	for(int i = 0; i < 4; i++)
+	{
+		gb_timer_tick();
+		ppu_timer_tick();
+	}
+
 	//writing to boot ROM switch
 	if(addr == 0xFF50)
 	{
@@ -834,11 +865,9 @@ void mmu_write(uint16_t addr, uint8_t val)
 		}
 	}
 
-
 	//writing normally
 	else
 		gb.sysbus[addr] = val;
-
 }
 
 void gb_timer_tick()
@@ -861,7 +890,7 @@ void gb_timer_tick()
 	}
 
 	//check TAC
-	uint8_t TAC = mmu_read(0xFF07);
+	uint8_t TAC = gb.sysbus[0xFF07];
 	uint8_t clockSelect = TAC & 3;
 	//if TIMA increment is enabled,
 	if(TAC & 0x04)

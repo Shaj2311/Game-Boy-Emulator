@@ -90,6 +90,11 @@ int main(int argc, char **argv)
 			{
 				//halt for 4 cycles
 				currCycles = 4;
+				for(int i = 0; i < currCycles; i++)
+				{
+					gb_timer_tick();
+					ppu_timer_tick();
+				}
 			}
 			else
 			{
@@ -104,12 +109,12 @@ int main(int argc, char **argv)
 
 			}
 
-			//advance cycle count
-			for(int i = 0; i < currCycles; i++)
-			{
-				gb_timer_tick();
-				ppu_timer_tick();
-			}
+			////advance cycle count
+			//for(int i = 0; i < currCycles; i++)
+			//{
+			//	gb_timer_tick();
+			//	ppu_timer_tick();
+			//}
 
 			//advance total cycles executed in this frame
 			cycles += currCycles;
