@@ -689,7 +689,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 		gb.sysbus[addr] = 0;
 
 		//compute new AND gate output
-		uint8_t newTAC = val;
+		uint8_t newTAC = gb.sysbus[0xFF07];
 		uint16_t newClockBit;
 		switch(newTAC & 3)
 		{
@@ -1344,7 +1344,7 @@ uint8_t getSTATint()
 				return 1;
 			return 0;
 		case 2:
-			if(STAT & 20)
+			if(STAT & 0x20)
 				return 1;
 			return 0;
 		default:
