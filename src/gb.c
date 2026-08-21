@@ -205,6 +205,20 @@ void gb_load_cartridge(const char *cartridge)
 	memcpy(gb.sysbus, gb.rom, (gb.romSize < 0x4000 ? gb.romSize : 0x4000));
 
 	puts("Cartridge loaded successfully");
+
+	//check ROM's MBC type
+	if(gb.rom[0x0147] == 0x00)
+		gb.mbcType = MBC_NONE;
+	else if(gb.rom[0x0147] <= 0x03)
+		gb.mbcType = MBC_1;
+	else if(gb.rom[0x0147] <= 0x06)
+		gb.mbcType = MBC_2;
+	else if(gb.rom[0x0147] <= 0x13)
+		gb.mbcType = MBC_3;
+	else if(gb.rom[0x0147] <= 0x1E)
+		gb.mbcType = MBC_5;
+	else //fallback in case of unknown MBC type
+		gb.mbcType = MBC_NONE;
 }
 
 void gb_service_interrupts()
@@ -553,11 +567,7 @@ uint8_t mmu_read(uint16_t addr)
 		if(bank == 0)
 			bank = 1;
 
-		//handle ROM mode 0
-		if(gb.bankingMode == 0)
-		{
-			bank |= (gb.ramBankOrRomHigh << 5);
-		}
+		bank |= (gb.ramBankOrRomHigh << 5);
 
 		uint32_t offset = (addr - 0x4000) + ((uint32_t)bank * 0x4000);
 

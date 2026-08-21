@@ -24,6 +24,15 @@ typedef struct
 	uint8_t count;
 } OAM_Result;
 
+typedef enum
+{
+	MBC_NONE,
+	MBC_1,
+	MBC_2,
+	MBC_3,
+	MBC_5
+} MBC_Type;
+
 typedef struct
 {
 	//CPU registers
@@ -65,6 +74,7 @@ typedef struct
 	//ROM details
 	char *rom;
 	long romSize;
+	MBC_Type mbcType;
 	uint8_t currRomBank;
 
 	//Banking details
