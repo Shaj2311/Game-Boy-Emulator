@@ -132,6 +132,7 @@ void gb_timer_tick();
 
 uint8_t gb_compute_joyp();
 void gb_press_key(JoypadInput input);
+void gb_release_key(JoypadInput input);
 
 uint8_t mmu_read(uint16_t addr);
 void mmu_write(uint16_t addr, uint8_t val);

@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/games/Street Fighter II (USA, Europe) (Rev 1) (SGB Enhanced).gb"
+#define DBG_CARTRIDGE "roms/games/Tetris 2 (USA, Europe) (SGB Enhanced).gb"
 
 GameBoy gb;
 const uint8_t bootROM[256] =

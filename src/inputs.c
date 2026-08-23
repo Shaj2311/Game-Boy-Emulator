@@ -8,7 +8,17 @@ void gb_press_key(JoypadInput input)
 	//update JOYP
 	gb_compute_joyp();
 
-	//TODO: request joypad interrupt
+	//request joypad interrupt
+	gb.sysbus[0xFF0F] |= 0x10;
+}
+
+void gb_release_key(JoypadInput input)
+{
+	//update joypad keys
+	gb.joypadInputs |= 1 << input;
+
+	//update JOYP
+	gb_compute_joyp();
 }
 
 uint8_t gb_compute_joyp()
