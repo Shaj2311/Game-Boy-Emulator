@@ -2,6 +2,22 @@
 #define GB_H
 #include <stdint.h>
 
+#define LCDC_ADDR 0xFF40
+#define STAT_ADDR 0xFF41
+#define LY_ADDR 0xFF44
+#define LYC_ADDR 0xFF45
+
+#define SCY_ADDR 0xFF42
+#define SCX_ADDR 0xFF43
+#define WY_ADDR 0xFF4A
+#define WX_ADDR 0xFF4B
+
+#define BGP_ADDR 0xFF47
+#define OBP0_ADDR 0xFF48
+#define OBP1_ADDR 0xFF49
+
+#define JOYP_ADDR 0xFF00
+
 typedef enum
 {
 	PPU_MODE_HBLANK,
@@ -32,6 +48,21 @@ typedef enum
 	MBC_3,
 	MBC_5
 } MBC_Type;
+
+typedef enum
+{
+	// buttons
+	INPUT_A,
+	INPUT_B,
+	INPUT_SELECT,
+	INPUT_START,
+
+	// D-pad
+	INPUT_RIGHT,
+	INPUT_LEFT,
+	INPUT_UP,
+	INPUT_DOWN,
+} JoypadInput;
 
 typedef struct
 {
@@ -83,6 +114,9 @@ typedef struct
 	uint8_t bankingMode;
 	uint8_t *cartridgeRAM;
 	size_t cartridgeRamSize;
+
+	//Joypad inputs
+	uint8_t joypadInputs; //[D-PAD | BUTTONS]
 } GameBoy;
 
 typedef struct
@@ -105,6 +139,10 @@ void gb_service_interrupts();
 void gb_execute(uint8_t instruction);
 void gb_exit_invalid_opcode(uint8_t instruction);
 void gb_timer_tick();
+
+uint8_t gb_compute_joyp();
+void gb_press_key(JoypadInput input);
+void gb_release_key(JoypadInput input);
 
 uint8_t mmu_read(uint16_t addr);
 void mmu_write(uint16_t addr, uint8_t val);

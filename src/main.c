@@ -49,8 +49,76 @@ int main(int argc, char **argv)
 					running = 0;
 					break;
 				case SDL_EVENT_KEY_DOWN:
-					if(event.key.scancode == SDL_SCANCODE_ESCAPE)
-						running = 0;
+					if(event.key.repeat) break; //skip if pressed in previous iteration
+					switch(event.key.scancode)
+					{
+						case SDL_SCANCODE_ESCAPE:
+							running = 0; break;
+
+						case SDL_SCANCODE_S: case SDL_SCANCODE_DOWN:
+							gb_press_key(INPUT_DOWN);
+							break;
+						case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER:
+							gb_press_key(INPUT_START);
+							break;
+
+						case SDL_SCANCODE_W: case SDL_SCANCODE_UP:
+							gb_press_key(INPUT_UP);
+							break;
+						case SDL_SCANCODE_TAB: case SDL_SCANCODE_KP_PLUS:
+							gb_press_key(INPUT_SELECT);
+							break;
+
+						case SDL_SCANCODE_K: case SDL_SCANCODE_KP_2:
+							gb_press_key(INPUT_B);
+							break;
+						case SDL_SCANCODE_A: case SDL_SCANCODE_LEFT:
+							gb_press_key(INPUT_LEFT);
+							break;
+
+						case SDL_SCANCODE_D: case SDL_SCANCODE_RIGHT:
+							gb_press_key(INPUT_RIGHT);
+							break;
+						case SDL_SCANCODE_J: case SDL_SCANCODE_KP_1:
+							gb_press_key(INPUT_A);
+							break;
+
+						default: break;
+					}
+					break;
+				case SDL_EVENT_KEY_UP:
+					switch(event.key.scancode)
+					{
+						case SDL_SCANCODE_S: case SDL_SCANCODE_DOWN:
+							gb_release_key(INPUT_DOWN);
+							break;
+						case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER:
+							gb_release_key(INPUT_START);
+							break;
+
+						case SDL_SCANCODE_W: case SDL_SCANCODE_UP:
+							gb_release_key(INPUT_UP);
+							break;
+						case SDL_SCANCODE_TAB: case SDL_SCANCODE_KP_PLUS:
+							gb_release_key(INPUT_SELECT);
+							break;
+
+						case SDL_SCANCODE_K: case SDL_SCANCODE_KP_2:
+							gb_release_key(INPUT_B);
+							break;
+						case SDL_SCANCODE_A: case SDL_SCANCODE_LEFT:
+							gb_release_key(INPUT_LEFT);
+							break;
+
+						case SDL_SCANCODE_D: case SDL_SCANCODE_RIGHT:
+							gb_release_key(INPUT_RIGHT);
+							break;
+						case SDL_SCANCODE_J: case SDL_SCANCODE_KP_1:
+							gb_release_key(INPUT_A);
+							break;
+
+						default: break;
+					}
 					break;
 			}
 		}
