@@ -3,21 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/mem_timing/mem_timing.gb"
-
-#define LCDC_ADDR 0xFF40
-#define STAT_ADDR 0xFF41
-#define LY_ADDR 0xFF44
-#define LYC_ADDR 0xFF45
-
-#define SCY_ADDR 0xFF42
-#define SCX_ADDR 0xFF43
-#define WY_ADDR 0xFF4A
-#define WX_ADDR 0xFF4B
-
-#define BGP_ADDR 0xFF47
-#define OBP0_ADDR 0xFF48
-#define OBP1_ADDR 0xFF49
+#define DBG_CARTRIDGE "roms/games/Street Fighter II (USA, Europe) (Rev 1) (SGB Enhanced).gb"
 
 GameBoy gb;
 const uint8_t bootROM[256] =
@@ -117,6 +103,10 @@ void gb_boot()
 		gb.frameBuffer[i] = whiteRGBA;
 	//no lines rendered yet
 	gb.windowLinesRendered = 0;
+
+	//reset joypad inputs
+	gb.sysbus[JOYP_ADDR] = 0xCF;
+	gb.joypadInputs = 0xFF;
 }
 
 void gb_init_cartridge_ram()
@@ -582,6 +572,10 @@ uint8_t mmu_read(uint16_t addr)
 			val = 0xFF;
 	}
 
+	//reading from joypad register
+	else if(addr == JOYP_ADDR)
+		val = gb_compute_joyp();
+
 	//tick timers 1 M-cycle
 	for(int i = 0; i < 4; i++)
 	{
@@ -792,6 +786,21 @@ void mmu_write(uint16_t addr, uint8_t val)
 				gb.sysbus[0xFF05] = TIMA;
 		}
 	}
+
+	//writing to joypad input register
+	if(addr == JOYP_ADDR)
+	{
+		//get old JOYP
+		uint8_t oldJOYP = gb.sysbus[addr];
+
+		//update bits 4 and 5
+		oldJOYP &= 0xCF;
+		oldJOYP |= (val & 0x30);
+
+		//write to JOYP
+		gb.sysbus[addr] = oldJOYP;
+	}
+
 
 	//writing normally
 	else

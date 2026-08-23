@@ -55,20 +55,40 @@ int main(int argc, char **argv)
 							running = 0; break;
 
 						case SDL_SCANCODE_S: case SDL_SCANCODE_DOWN:
+							gb_press_key(INPUT_DOWN);
+							printf("%02X\n", gb.sysbus[0xFF00]);
+							break;
 						case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER:
-							puts("Start/Down"); break;
+							gb_press_key(INPUT_START);
+							printf("%02X\n", gb.sysbus[0xFF00]);
+							break;
 
 						case SDL_SCANCODE_W: case SDL_SCANCODE_UP:
+							gb_press_key(INPUT_UP);
+							printf("%02X\n", gb.sysbus[0xFF00]);
+							break;
 						case SDL_SCANCODE_TAB: case SDL_SCANCODE_KP_PLUS:
-							puts("Select/Up"); break;
+							gb_press_key(INPUT_SELECT);
+							printf("%02X\n", gb.sysbus[0xFF00]);
+							break;
 
 						case SDL_SCANCODE_K: case SDL_SCANCODE_KP_2:
+							gb_press_key(INPUT_B);
+							printf("%02X\n", gb.sysbus[0xFF00]);
+							break;
 						case SDL_SCANCODE_A: case SDL_SCANCODE_LEFT:
-							puts("B/Left"); break;
+							gb_press_key(INPUT_LEFT);
+							printf("%02X\n", gb.sysbus[0xFF00]);
+							break;
 
 						case SDL_SCANCODE_D: case SDL_SCANCODE_RIGHT:
+							gb_press_key(INPUT_RIGHT);
+							printf("%02X\n", gb.sysbus[0xFF00]);
+							break;
 						case SDL_SCANCODE_J: case SDL_SCANCODE_KP_1:
-							puts("A/Right"); break;
+							gb_press_key(INPUT_A);
+							printf("%02X\n", gb.sysbus[0xFF00]);
+							break;
 
 						default: break;
 					}
