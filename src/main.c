@@ -53,21 +53,21 @@ int main(int argc, char **argv)
 					{
 						case SDL_SCANCODE_ESCAPE:
 							running = 0; break;
-						case SDL_SCANCODE_W:
+						case SDL_SCANCODE_W: case SDL_SCANCODE_UP:
 							puts("Up"); break;
-						case SDL_SCANCODE_A:
+						case SDL_SCANCODE_A: case SDL_SCANCODE_LEFT:
 							puts("Left"); break;
-						case SDL_SCANCODE_S:
+						case SDL_SCANCODE_S: case SDL_SCANCODE_DOWN:
 							puts("Down"); break;
-						case SDL_SCANCODE_D:
+						case SDL_SCANCODE_D: case SDL_SCANCODE_RIGHT:
 							puts("Right"); break;
-						case SDL_SCANCODE_J:
+						case SDL_SCANCODE_J: case SDL_SCANCODE_KP_1:
 							puts("A"); break;
-						case SDL_SCANCODE_K:
+						case SDL_SCANCODE_K: case SDL_SCANCODE_KP_2:
 							puts("B"); break;
-						case SDL_SCANCODE_RETURN:
+						case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER:
 							puts("Start"); break;
-						case SDL_SCANCODE_TAB:
+						case SDL_SCANCODE_TAB: case SDL_SCANCODE_KP_PLUS:
 							puts("Select"); break;
 						default: break;
 					}
