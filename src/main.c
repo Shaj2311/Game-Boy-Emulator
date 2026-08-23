@@ -49,8 +49,29 @@ int main(int argc, char **argv)
 					running = 0;
 					break;
 				case SDL_EVENT_KEY_DOWN:
-					if(event.key.scancode == SDL_SCANCODE_ESCAPE)
-						running = 0;
+					switch(event.key.scancode)
+					{
+						case SDL_SCANCODE_ESCAPE:
+							running = 0; break;
+						case SDL_SCANCODE_W:
+							puts("Up"); break;
+						case SDL_SCANCODE_A:
+							puts("Left"); break;
+						case SDL_SCANCODE_S:
+							puts("Down"); break;
+						case SDL_SCANCODE_D:
+							puts("Right"); break;
+						case SDL_SCANCODE_J:
+							puts("A"); break;
+						case SDL_SCANCODE_K:
+							puts("B"); break;
+						case SDL_SCANCODE_RETURN:
+							puts("Start"); break;
+						case SDL_SCANCODE_TAB:
+							puts("Select"); break;
+						default: break;
+					}
+
 					break;
 			}
 		}
