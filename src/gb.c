@@ -754,6 +754,22 @@ void mmu_write(uint16_t addr, uint8_t val)
 		gb.sysbus[addr] = oldJOYP;
 	}
 
+	//writing to OAM DMA
+	else if(addr == 0xFF46)
+	{
+		//copy to OAM
+		uint16_t srcAddr = val << 8;
+		for(int i = 0; i < 160; i++)
+		{
+			gb.sysbus[0xFE00 + i] = mmu_read(srcAddr + i);
+		}
+		for(int i = 0; i < 4; i++)
+		{
+			gb_timer_tick();
+			ppu_timer_tick();
+		}
+	}
+
 	//writing to range 0x0000 to 0x7FFF (ROM region)
 	else if(addr <= 0x7FFF)
 		mbcControlWrite(addr, val);
