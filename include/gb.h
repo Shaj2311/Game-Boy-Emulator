@@ -109,7 +109,7 @@ typedef struct
 
 	//Banking details
 	uint8_t ramEnable;
-	uint8_t ramBankOrRomHigh;
+	uint8_t ramBankReg;
 	uint8_t bankingMode;
 	uint8_t *cartridgeRAM;
 	size_t cartridgeRamSize;

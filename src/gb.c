@@ -555,7 +555,7 @@ uint8_t mmu_read(uint16_t addr)
 		if(bank == 0)
 			bank = 1;
 
-		bank |= (gb.ramBankOrRomHigh << 5);
+		bank |= (gb.ramBankReg << 5);
 
 		uint32_t offset = (addr - 0x4000) + ((uint32_t)bank * 0x4000);
 
@@ -570,7 +570,7 @@ uint8_t mmu_read(uint16_t addr)
 	{
 		if(gb.ramEnable && gb.cartridgeRAM != 0)
 		{
-			uint8_t ramBank = gb.bankingMode ? gb.ramBankOrRomHigh : 0;
+			uint8_t ramBank = gb.bankingMode ? gb.ramBankReg : 0;
 			uint32_t offset = (addr - 0xA000) + (ramBank * 0x2000);
 
 			if(offset < gb.cartridgeRamSize)
@@ -602,33 +602,6 @@ void mmu_write(uint16_t addr, uint8_t val)
 		if(!gb.sysbus[0xFF50])
 			gb.sysbus[addr] = val;
 	}
-
-	////writing to RAM enable
-	//else if(addr <= 0x1FFF)
-	//{
-	//	gb.ramEnable = ((val & 0x0F) == 0x0A);
-	//}
-
-	////writing to ROM bank number
-	//else if(addr <= 0x3FFF)
-	//{
-	//	val &= 0x1F;
-	//	if(val == 0)
-	//		val = 1;
-	//	gb.currRomBank = val;
-	//}
-
-	////writing to RAM bank or upper ROM
-	//else if(addr <= 0x5FFF)
-	//{
-	//	gb.ramBankOrRomHigh = val & 0x03;
-	//}
-
-	////writing to banking mode select
-	//else if(addr <= 0x7FFF)
-	//{
-	//	gb.bankingMode = val & 0x01;
-	//}
 
 	//writing to DIV register
 	else if(addr == 0xFF04)
@@ -781,6 +754,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 		gb.sysbus[addr] = oldJOYP;
 	}
 
+	//writing to range 0x0000 to 0x7FFF (ROM region)
 	else if(addr <= 0x7FFF)
 		mbcControlWrite(addr, val);
 
@@ -807,7 +781,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 	{
 		if(gb.ramEnable && gb.cartridgeRAM != 0)
 		{
-			uint8_t ramBank = gb.bankingMode ? gb.ramBankOrRomHigh : 0;
+			uint8_t ramBank = gb.bankingMode ? gb.ramBankReg : 0;
 			gb.cartridgeRAM[(addr - 0xA000) + ((uint32_t)ramBank * 0x2000)] = val;
 		}
 	}
