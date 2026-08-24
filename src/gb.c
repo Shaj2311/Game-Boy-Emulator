@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/games/Tetris 2 (USA, Europe) (SGB Enhanced).gb"
+#define DBG_CARTRIDGE "roms/games/Street Fighter II (USA, Europe) (Rev 1) (SGB Enhanced).gb"
 
 GameBoy gb;
 const uint8_t bootROM[256] =
@@ -201,8 +201,6 @@ void gb_load_cartridge(const char *cartridge)
 		gb.mbcType = MBC_NONE;
 	else if(gb.rom[0x0147] <= 0x03)
 		gb.mbcType = MBC_1;
-	else if(gb.rom[0x0147] <= 0x06)
-		gb.mbcType = MBC_2;
 	else if(gb.rom[0x0147] <= 0x13)
 		gb.mbcType = MBC_3;
 	else if(gb.rom[0x0147] <= 0x1E)
@@ -605,32 +603,32 @@ void mmu_write(uint16_t addr, uint8_t val)
 			gb.sysbus[addr] = val;
 	}
 
-	//writing to RAM enable
-	else if(addr <= 0x1FFF)
-	{
-		gb.ramEnable = ((val & 0x0F) == 0x0A);
-	}
+	////writing to RAM enable
+	//else if(addr <= 0x1FFF)
+	//{
+	//	gb.ramEnable = ((val & 0x0F) == 0x0A);
+	//}
 
-	//writing to ROM bank number
-	else if(addr <= 0x3FFF)
-	{
-		val &= 0x1F;
-		if(val == 0)
-			val = 1;
-		gb.currRomBank = val;
-	}
+	////writing to ROM bank number
+	//else if(addr <= 0x3FFF)
+	//{
+	//	val &= 0x1F;
+	//	if(val == 0)
+	//		val = 1;
+	//	gb.currRomBank = val;
+	//}
 
-	//writing to RAM bank or upper ROM
-	else if(addr <= 0x5FFF)
-	{
-		gb.ramBankOrRomHigh = val & 0x03;
-	}
+	////writing to RAM bank or upper ROM
+	//else if(addr <= 0x5FFF)
+	//{
+	//	gb.ramBankOrRomHigh = val & 0x03;
+	//}
 
-	//writing to banking mode select
-	else if(addr <= 0x7FFF)
-	{
-		gb.bankingMode = val & 0x01;
-	}
+	////writing to banking mode select
+	//else if(addr <= 0x7FFF)
+	//{
+	//	gb.bankingMode = val & 0x01;
+	//}
 
 	//writing to DIV register
 	else if(addr == 0xFF04)
@@ -677,34 +675,6 @@ void mmu_write(uint16_t addr, uint8_t val)
 			}
 			else
 				gb.sysbus[0xFF05] = TIMA;
-		}
-	}
-
-	//writing to WRAM (write to echo RAM as well)
-	else if(addr >= 0xC000 && addr <= 0xDDFF)
-	{
-		//write to WRAM
-		gb.sysbus[addr] = val;
-		//also write to echo RAM
-		gb.sysbus[addr + 0x2000] = val;
-	}
-
-	//writing to echo RAM (write to WRAM as well)
-	else if(addr >= 0xE000 && addr <= 0xFDFF)
-	{
-		//write to echo RAM
-		gb.sysbus[addr] = val;
-		//also write to WRAM
-		gb.sysbus[addr - 0x2000] = val;
-	}
-
-	//writing to cartridge RAM
-	else if(addr >= 0xA000 && addr <= 0xBFFF)
-	{
-		if(gb.ramEnable && gb.cartridgeRAM != 0)
-		{
-			uint8_t ramBank = gb.bankingMode ? gb.ramBankOrRomHigh : 0;
-			gb.cartridgeRAM[(addr - 0xA000) + ((uint32_t)ramBank * 0x2000)] = val;
 		}
 	}
 
@@ -798,7 +768,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 	}
 
 	//writing to joypad input register
-	if(addr == JOYP_ADDR)
+	else if(addr == JOYP_ADDR)
 	{
 		//get old JOYP
 		uint8_t oldJOYP = gb.sysbus[addr];
@@ -811,6 +781,36 @@ void mmu_write(uint16_t addr, uint8_t val)
 		gb.sysbus[addr] = oldJOYP;
 	}
 
+	else if(addr <= 0x7FFF)
+		mbcControlWrite(addr, val);
+
+	//writing to WRAM (write to echo RAM as well)
+	else if(addr >= 0xC000 && addr <= 0xDDFF)
+	{
+		//write to WRAM
+		gb.sysbus[addr] = val;
+		//also write to echo RAM
+		gb.sysbus[addr + 0x2000] = val;
+	}
+
+	//writing to echo RAM (write to WRAM as well)
+	else if(addr >= 0xE000 && addr <= 0xFDFF)
+	{
+		//write to echo RAM
+		gb.sysbus[addr] = val;
+		//also write to WRAM
+		gb.sysbus[addr - 0x2000] = val;
+	}
+
+	//writing to cartridge RAM
+	else if(addr >= 0xA000 && addr <= 0xBFFF)
+	{
+		if(gb.ramEnable && gb.cartridgeRAM != 0)
+		{
+			uint8_t ramBank = gb.bankingMode ? gb.ramBankOrRomHigh : 0;
+			gb.cartridgeRAM[(addr - 0xA000) + ((uint32_t)ramBank * 0x2000)] = val;
+		}
+	}
 
 	//writing normally
 	else

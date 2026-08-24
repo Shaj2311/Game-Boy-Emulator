@@ -44,7 +44,6 @@ typedef enum
 {
 	MBC_NONE,
 	MBC_1,
-	MBC_2,
 	MBC_3,
 	MBC_5
 } MBC_Type;
@@ -106,7 +105,7 @@ typedef struct
 	char *rom;
 	long romSize;
 	MBC_Type mbcType;
-	uint8_t currRomBank;
+	uint16_t currRomBank;
 
 	//Banking details
 	uint8_t ramEnable;
@@ -156,6 +155,8 @@ void ppu_pix_trans_bg(uint8_t X, uint8_t Y, uint8_t SCX, uint8_t SCY, uint8_t LC
 void ppu_pix_trans_win(uint8_t X, uint8_t Y, uint8_t WX, uint8_t WY, uint8_t LCDC, uint16_t winTileMapAddr, uint8_t *currBg);
 void ppu_pix_trans_sprites(OAM_Result sprites, uint8_t LCDC, uint8_t *currBg);
 uint32_t ppu_lookup_RGBA(uint8_t code, uint8_t paletteReg);
+
+void mbcControlWrite(uint16_t addr, uint8_t val);
 
 uint8_t getSTATint();
 #endif
