@@ -15,9 +15,6 @@ int main(int argc, char **argv)
 {
 	SDL_Init(SDL_INIT_VIDEO);
 
-	//init log file
-	FILE *logFile = fopen("gb_debug.log", "w");
-
 	//Create window
 	SDL_Window *window = SDL_CreateWindow("Game Boy", 160 * 5, 144 * 5, 0);
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, 0);
@@ -192,7 +189,6 @@ int main(int argc, char **argv)
 	SDL_DestroyRenderer(renderer);
 	free(gb.cartridgeRAM);
 	free(gb.rom);
-	fclose(logFile);
 	return 0;
 }
 
