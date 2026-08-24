@@ -120,9 +120,6 @@ int main(int argc, char **argv)
 			}
 		}
 
-		//reset rendered window lines counter (required by PPU to draw window)
-		gb.windowLinesRendered = 0;
-
 		//get start ticks
 		uint64_t startTicks = SDL_GetPerformanceCounter();
 
