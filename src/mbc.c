@@ -107,3 +107,31 @@ void mbcControlWrite(uint16_t addr, uint8_t val)
 		}
 	}
 }
+
+uint8_t mbcRomRead(uint16_t addr)
+{
+	uint32_t offset;
+
+	if(addr <= 0x3FFF)
+	{
+		if(gb.mbcType == MBC_1 && gb.bankingMode == 1)
+			offset = ((uint32_t)(gb.ramBankReg & 0x03) << 5) * 0x4000 + addr;
+		else
+			offset = addr;
+	}
+	else if(addr >= 0x4000 && addr <= 0x7FFF)
+	{
+		uint16_t bank = gb.currRomBank;
+
+		if(gb.mbcType == MBC_1 && gb.bankingMode == 1)
+			bank |= (gb.ramBankReg & 0x03) << 5;
+
+		offset = (addr - 0x4000) + ((uint32_t)bank * 0x4000);
+	}
+
+
+	//prevent out-of-bounds reads
+	offset %= (uint32_t)gb.romSize;
+
+	return gb.rom[offset];
+}

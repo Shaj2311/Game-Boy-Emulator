@@ -548,23 +548,8 @@ uint8_t mmu_read(uint16_t addr)
 	}
 
 	//reading from switchable ROM bank (0x4000 - 0x7FFF)
-	else if(addr >= 0x4000 && addr <= 0x7FFF)
-	{
-		uint8_t bank = gb.currRomBank;
-
-		//default to bank 1
-		if(bank == 0)
-			bank = 1;
-
-		bank |= (gb.ramBankReg << 5);
-
-		uint32_t offset = (addr - 0x4000) + ((uint32_t)bank * 0x4000);
-
-		//prevent out-of-bounds reads
-		offset %= gb.romSize;
-
-		val = gb.rom[offset];
-	}
+	else if(addr >= 0x0000 && addr <= 0x7FFF)
+		return mbcRomRead(addr);
 
 	//reading from external cartridge RAM
 	else if(addr >= 0xA000 && addr <= 0xBFFF)
