@@ -171,8 +171,8 @@ void mbcRamWrite(uint16_t addr, uint8_t val)
 		return;
 
 	uint32_t offset = (addr - 0xA000) + ((uint32_t)gb.ramBankReg * 0x2000);
-	//prevent out-of-bounds reads
-	if(offset > gb.cartridgeRamSize)
+	//prevent out-of-bounds writes
+	if(offset >= gb.cartridgeRamSize)
 		return;
 
 	//write to address
