@@ -137,24 +137,10 @@ void gb_load_cartridge(const char *cartridge);
 void gb_service_interrupts();
 void gb_execute(uint8_t instruction);
 void gb_exit_invalid_opcode(uint8_t instruction);
-void gb_timer_tick();
 
 uint8_t gb_compute_joyp();
 void gb_press_key(JoypadInput input);
 void gb_release_key(JoypadInput input);
-
-uint8_t mmu_read(uint16_t addr);
-void mmu_write(uint16_t addr, uint8_t val);
-
-void ppu_set_mode(PPU_Mode mode);
-void ppu_set_LY(uint8_t LY);
-void ppu_timer_tick();
-OAM_Result ppu_oam_search();
-void ppu_pixel_transfer();
-void ppu_pix_trans_bg(uint8_t X, uint8_t Y, uint8_t SCX, uint8_t SCY, uint8_t LCDC, uint16_t bgTileMapAddr, uint8_t *currBg);
-void ppu_pix_trans_win(uint8_t X, uint8_t Y, uint8_t WX, uint8_t WY, uint8_t LCDC, uint16_t winTileMapAddr, uint8_t *currBg);
-void ppu_pix_trans_sprites(OAM_Result sprites, uint8_t LCDC, uint8_t *currBg);
-uint32_t ppu_lookup_RGBA(uint8_t code, uint8_t paletteReg);
 
 void mbcControlWrite(uint16_t addr, uint8_t val);
 uint8_t mbcRomRead(uint16_t addr);

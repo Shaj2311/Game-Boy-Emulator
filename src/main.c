@@ -1,4 +1,6 @@
 #include "gb.h"
+#include "timers.h"
+#include "mmu.h"
 #include <stdio.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>

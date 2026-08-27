@@ -1,7 +1,12 @@
-#include <stdint.h>
-
 #ifndef INSTRUCT_H
 #define INSTRUCT_H
+
+#include <stdint.h>
+
+#include "gb.h"
+#include "timers.h"
+#include "ppu.h"
+#include "mmu.h"
 
 // BLOCK 0
 
