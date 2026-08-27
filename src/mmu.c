@@ -3,6 +3,7 @@
 
 #include "timers.h"
 #include "ppu.h"
+#include "addr.h"
 
 uint8_t mmu_read(uint16_t addr)
 {

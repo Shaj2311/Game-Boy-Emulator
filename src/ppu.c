@@ -1,6 +1,7 @@
 #include <string.h>
 
 #include "ppu.h"
+#include "addr.h"
 
 void ppu_set_mode(PPU_Mode mode)
 {

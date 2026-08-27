@@ -1,4 +1,5 @@
 #include "gb.h"
+#include "addr.h"
 
 void gb_press_key(JoypadInput input)
 {

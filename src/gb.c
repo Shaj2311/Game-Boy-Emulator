@@ -2,6 +2,7 @@
 #include "instructions.h"
 #include "timers.h"
 #include "mmu.h"
+#include "addr.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
