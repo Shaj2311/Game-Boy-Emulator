@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/games/Street Fighter II (USA, Europe) (Rev 1) (SGB Enhanced).gb"
+#define DBG_CARTRIDGE "roms/games/Kirby's Dream Land 2 (USA, Europe) (SGB Enhanced).gb"
 
 GameBoy gb;
 const uint8_t bootROM[256] =
@@ -197,13 +197,14 @@ void gb_load_cartridge(const char *cartridge)
 	puts("Cartridge loaded successfully");
 
 	//check ROM's MBC type
-	if(gb.rom[0x0147] == 0x00)
+	uint8_t romType = gb.rom[0x0147];
+	if(romType == 0x00 || romType == 0x08 || romType == 0x09)
 		gb.mbcType = MBC_NONE;
-	else if(gb.rom[0x0147] <= 0x03)
+	else if(romType >= 0x01 && romType <= 0x03)
 		gb.mbcType = MBC_1;
-	else if(gb.rom[0x0147] <= 0x13)
+	else if(romType >= 0x0F && romType <= 0x13)
 		gb.mbcType = MBC_3;
-	else if(gb.rom[0x0147] <= 0x1E)
+	else if(romType >= 0x19 && romType <= 0x1E)
 		gb.mbcType = MBC_5;
 	else //fallback in case of unknown MBC type
 		gb.mbcType = MBC_NONE;
