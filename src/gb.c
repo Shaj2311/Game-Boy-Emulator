@@ -536,8 +536,13 @@ uint8_t mmu_read(uint16_t addr)
 	//	return 0x90;
 
 	uint8_t val = gb.sysbus[addr];
+
+	//reading from joypad register
+	if(addr == JOYP_ADDR)
+		val = gb_compute_joyp();
+
 	//reading from boot ROM
-	if(addr < 0x0100)
+	else if(addr < 0x0100)
 	{
 		//check boot ROM switch
 		if(gb.sysbus[0xFF50] == 0)
@@ -565,10 +570,6 @@ uint8_t mmu_read(uint16_t addr)
 		else
 			val = 0xFF;
 	}
-
-	//reading from joypad register
-	else if(addr == JOYP_ADDR)
-		val = gb_compute_joyp();
 
 	//tick timers 1 M-cycle
 	for(int i = 0; i < 4; i++)
