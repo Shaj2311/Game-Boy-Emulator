@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/games/Kirby's Dream Land 2 (USA, Europe) (SGB Enhanced).gb"
+#define DBG_CARTRIDGE "roms/games/Pokemon - Red Version (USA, Europe) (SGB Enhanced).gb"
 
 GameBoy gb;
 const uint8_t bootROM[256] =
@@ -553,23 +553,12 @@ uint8_t mmu_read(uint16_t addr)
 	}
 
 	//reading from switchable ROM bank (0x4000 - 0x7FFF)
-	else if(addr >= 0x0000 && addr <= 0x7FFF)
+	else if(addr <= 0x7FFF)
 		return mbcRomRead(addr);
 
 	//reading from external cartridge RAM
 	else if(addr >= 0xA000 && addr <= 0xBFFF)
-	{
-		if(gb.ramEnable && gb.cartridgeRAM != 0)
-		{
-			uint8_t ramBank = gb.bankingMode ? gb.ramBankReg : 0;
-			uint32_t offset = (addr - 0xA000) + (ramBank * 0x2000);
-
-			if(offset < gb.cartridgeRamSize)
-				val = gb.cartridgeRAM[offset];
-		}
-		else
-			val = 0xFF;
-	}
+		return mbcRamRead(addr);
 
 	//tick timers 1 M-cycle
 	for(int i = 0; i < 4; i++)
@@ -781,13 +770,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 
 	//writing to cartridge RAM
 	else if(addr >= 0xA000 && addr <= 0xBFFF)
-	{
-		if(gb.ramEnable && gb.cartridgeRAM != 0)
-		{
-			uint8_t ramBank = gb.bankingMode ? gb.ramBankReg : 0;
-			gb.cartridgeRAM[(addr - 0xA000) + ((uint32_t)ramBank * 0x2000)] = val;
-		}
-	}
+		mbcRamWrite(addr, val);
 
 	//writing normally
 	else

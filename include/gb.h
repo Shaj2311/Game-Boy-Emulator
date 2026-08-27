@@ -158,6 +158,8 @@ uint32_t ppu_lookup_RGBA(uint8_t code, uint8_t paletteReg);
 
 void mbcControlWrite(uint16_t addr, uint8_t val);
 uint8_t mbcRomRead(uint16_t addr);
+void mbcRamWrite(uint16_t addr, uint8_t val);
+uint8_t mbcRamRead(uint16_t addr);
 
 uint8_t getSTATint();
 #endif

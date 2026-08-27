@@ -119,7 +119,7 @@ uint8_t mbcRomRead(uint16_t addr)
 		else
 			offset = addr;
 	}
-	else if(addr >= 0x4000 && addr <= 0x7FFF)
+	else
 	{
 		uint16_t bank = gb.currRomBank;
 
@@ -134,4 +134,47 @@ uint8_t mbcRomRead(uint16_t addr)
 	offset %= (uint32_t)gb.romSize;
 
 	return gb.rom[offset];
+}
+
+uint8_t mbcRamRead(uint16_t addr)
+{
+	//check RAM access
+	if(!gb.cartridgeRAM)
+		return 0xFF;
+	if(!gb.ramEnable)
+		return 0xFF;
+
+	//TODO: RTC stuff
+	if(gb.mbcType == MBC_3 && gb.ramBankReg >= 0x08 && gb.ramBankReg <= 0x0C)
+		return 0xFF;
+
+	uint32_t offset = (addr - 0xA000) + ((uint32_t)gb.ramBankReg * 0x2000);
+
+	//prevent out-of-bounds reads
+	if(offset >= gb.cartridgeRamSize)
+		return 0xFF;
+
+	//return value at RAM address
+	return gb.cartridgeRAM[offset];
+}
+
+void mbcRamWrite(uint16_t addr, uint8_t val)
+{
+	//check RAM access
+	if(!gb.cartridgeRAM)
+		return;
+	if(!gb.ramEnable)
+		return;
+
+	//TODO: RTC stuff
+	if(gb.mbcType == MBC_3 && gb.ramBankReg >= 0x08 && gb.ramBankReg <= 0x0C)
+		return;
+
+	uint32_t offset = (addr - 0xA000) + ((uint32_t)gb.ramBankReg * 0x2000);
+	//prevent out-of-bounds reads
+	if(offset > gb.cartridgeRamSize)
+		return;
+
+	//write to address
+	gb.cartridgeRAM[offset] = val;
 }
