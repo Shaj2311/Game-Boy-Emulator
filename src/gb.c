@@ -213,6 +213,18 @@ void gb_load_cartridge(const char *cartridge)
 		gb.mbcType = MBC_5;
 	else //fallback in case of unknown MBC type
 		gb.mbcType = MBC_NONE;
+
+	//check if ROM is battery-backed
+	gb.hasBattery = 0;
+	uint8_t batteryCodes[] = {0x03, 0x09, 0x0F, 0x10, 0x13, 0x1B, 0x1E, 0xFF};
+	for(uint8_t i = 0; batteryCodes[i] != 0xFF; i++)
+	{
+		if(gb.mbcType == i)
+		{
+			gb.hasBattery = 1;
+			break;
+		}
+	}
 }
 
 void gb_service_interrupts()

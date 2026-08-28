@@ -91,6 +91,7 @@ typedef struct
 	long romSize;
 	MBC_Type mbcType;
 	uint16_t currRomBank;
+	uint8_t hasBattery;
 
 	//Banking details
 	uint8_t ramEnable;
