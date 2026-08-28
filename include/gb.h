@@ -86,6 +86,7 @@ typedef struct
 	OAM_Result OAM_search_result;
 
 	//ROM details
+	char *romPath;
 	char *rom;
 	long romSize;
 	MBC_Type mbcType;
@@ -115,6 +116,7 @@ extern GameBoy gb;
 //extern const GB_RGBA RGBA[4];
 extern const uint32_t RGBA[4];
 
+void gb_get_cartridge_path(int argc, char **argv);
 void gb_boot();
 void gb_init_cartridge_ram();
 void gb_load_cartridge(const char *cartridge);

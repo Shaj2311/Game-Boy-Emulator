@@ -6,7 +6,6 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
-#define DBG_CARTRIDGE "roms/games/Street Fighter II (USA, Europe) (Rev 1) (SGB Enhanced).gb"
 
 GameBoy gb;
 const uint8_t bootROM[256] =
@@ -35,6 +34,27 @@ const uint32_t RGBA[4] = {
 	0x0F380FFF
 };
 
+void gb_get_cartridge_path(int argc, char **argv)
+{
+	//get path to cartridge
+	if(argc == 2)
+	{
+		gb.romPath = argv[1];
+		return;
+	}
+
+	//print error message
+	if(argc < 2)
+		puts("Error: Cartridge path not specified");
+	else
+		puts("Error: Too many arguments provided");
+
+	//print help message
+	printf("Usage: %s pathToCartridge\n", argv[0]);
+
+	exit(1);
+}
+
 void gb_boot()
 {
 	//reset CPU registers
@@ -58,7 +78,7 @@ void gb_boot()
 	gb.clock = 0;
 
 	//load cartridge
-	gb_load_cartridge(DBG_CARTRIDGE);
+	gb_load_cartridge(gb.romPath);
 
 	//initialize cartridge RAM
 	gb_init_cartridge_ram();

@@ -13,6 +13,10 @@
 
 int main(int argc, char **argv)
 {
+	//get path to cartridge
+	gb_get_cartridge_path(argc, argv);
+
+	//Initialize SDL3
 	SDL_Init(SDL_INIT_VIDEO);
 
 	//Create window
@@ -22,10 +26,6 @@ int main(int argc, char **argv)
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 	SDL_Event event;
 	int running = 1;
-
-	//ignore args for now
-	(void)argc;
-	(void)argv;
 
 	//get performance frequency (to convert ticks to milliseconds)
 	uint64_t sdlPerfFreq = SDL_GetPerformanceFrequency();
