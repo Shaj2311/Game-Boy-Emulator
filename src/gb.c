@@ -35,12 +35,6 @@ const uint32_t RGBA[4] = {
 	0x0F380FFF
 };
 
-uint32_t ppu_lookup_RGBA(uint8_t colorIndex, uint8_t paletteReg)
-{
-	uint8_t shadeIndex = (paletteReg >> (colorIndex * 2)) & 0x03;
-	return RGBA[shadeIndex];
-}
-
 void gb_boot()
 {
 	//reset CPU registers

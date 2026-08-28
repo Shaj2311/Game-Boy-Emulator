@@ -419,3 +419,10 @@ void ppu_pix_trans_sprites(OAM_Result OAM_sprites, uint8_t LCDC, uint8_t *currBg
 		gb.frameBuffer[LY * 160 + i] = ppu_lookup_RGBA(bestColorIndex, palette);
 	}
 }
+
+uint32_t ppu_lookup_RGBA(uint8_t colorIndex, uint8_t paletteReg)
+{
+	uint8_t shadeIndex = (paletteReg >> (colorIndex * 2)) & 0x03;
+	return RGBA[shadeIndex];
+}
+
