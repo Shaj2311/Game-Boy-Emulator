@@ -11,8 +11,6 @@
 #define GB_CYCLES_PER_FRAME (GB_MASTER_CLOCK_FREQ / GB_FPS)
 #define GB_MS_PER_FRAME (1000.0 / GB_FPS)
 
-void dbgLogState(FILE *logFile);
-
 int main(int argc, char **argv)
 {
 	SDL_Init(SDL_INIT_VIDEO);
@@ -157,9 +155,6 @@ int main(int argc, char **argv)
 				continue;
 			}
 
-			//DEBUG
-			//dbgLogState(logFile);
-
 			//get instruction
 			uint8_t instruction = mmu_read(gb.PC++);
 
@@ -189,15 +184,4 @@ int main(int argc, char **argv)
 	free(gb.cartridgeRAM);
 	free(gb.rom);
 	return 0;
-}
-
-void dbgLogState(FILE *logFile)
-{
-	fprintf(logFile,
-			"A:%02X F:%02X B:%02X C:%02X D:%02X E:%02X H:%02X L:%02X SP:%04X PC:%04X PCMEM:%02X,%02X,%02X,%02X\n",
-			gb.A, gb.F, gb.B, gb.C, gb.D, gb.E, gb.H, gb.L, gb.SP, gb.PC,
-			gb.sysbus[gb.PC],
-			gb.sysbus[gb.PC + 1],
-			gb.sysbus[gb.PC + 2],
-			gb.sysbus[gb.PC + 3]);
 }

@@ -51,18 +51,6 @@ void gb_boot()
 	gb.SP = 0xFFFE;
 	gb.PC = 0;
 
-	////DEBUG: Skip boot ROM
-	//gb.PC = 0x100;
-	//gb.SP = 0xFFFE;
-	//gb.A  = 0x01;
-	//gb.F  = 0xB0;
-	//gb.B  = 0x00;
-	//gb.C  = 0x13;
-	//gb.D  = 0x00;
-	//gb.E  = 0xD8;
-	//gb.H  = 0x01;
-	//gb.L  = 0x4D;
-
 	//reset boot ROM mapping control
 	gb.sysbus[0xFF50] = 0;
 

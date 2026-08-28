@@ -7,10 +7,6 @@
 
 uint8_t mmu_read(uint16_t addr)
 {
-	////DEBUG: Return 0x90 when reading from LY
-	//if(addr == LY_ADDR)
-	//	return 0x90;
-
 	uint8_t val = gb.sysbus[addr];
 
 	//reading from joypad register
