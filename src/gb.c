@@ -3,6 +3,7 @@
 #include "timers.h"
 #include "mmu.h"
 #include "addr.h"
+#include "battery.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -140,25 +141,26 @@ void gb_init_cartridge_ram()
 			break;
 	}
 
-	if(gb.cartridgeRamSize > 0)
-	{
-		//initialize cartridge RAM
-		gb.cartridgeRAM = calloc(1, gb.cartridgeRamSize);
-		if(!gb.cartridgeRAM)
-		{
-			puts("Error allocating cartridge RAM");
-			exit(1);
-		}
+	//return if cartridge has no RAM
+	if(gb.cartridgeRamSize == 0) return;
 
-		//get battery save file path if applicable
-		if(gb.hasBattery)
-		{
-			//get path to ROM
-			strcpy(gb.batterySavePath, gb.cartridgeRomPath);
-			//append .sav
-			strcat(gb.batterySavePath, ".sav");
-		}
+	//initialize cartridge RAM
+	gb.cartridgeRAM = calloc(1, gb.cartridgeRamSize);
+	if(!gb.cartridgeRAM)
+	{
+		puts("Error allocating cartridge RAM");
+		exit(1);
 	}
+
+	//return if cartridge has no battery save
+	if(!gb.hasBattery) return;
+
+	//get path to save file
+	strcpy(gb.batterySavePath, gb.cartridgeRomPath);
+	strcat(gb.batterySavePath, ".sav");
+
+	//load save file to cartridge RAM
+	batteryLoad(gb.batterySavePath);
 }
 void gb_load_cartridge(const char *cartridge)
 {

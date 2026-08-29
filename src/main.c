@@ -1,6 +1,7 @@
 #include "gb.h"
 #include "timers.h"
 #include "mmu.h"
+#include "battery.h"
 #include <stdio.h>
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -178,6 +179,7 @@ int main(int argc, char **argv)
 		while(((double)(SDL_GetPerformanceCounter() - startTicks) / sdlPerfFreq) * 1000 < GB_MS_PER_FRAME);
 	}
 
+	batterySave(gb.batterySavePath);
 	puts("Exiting");
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
