@@ -86,7 +86,7 @@ typedef struct
 	OAM_Result OAM_search_result;
 
 	//ROM details
-	char *romPath;
+	char *cartridgeRomPath;
 	char *rom;
 	long romSize;
 	MBC_Type mbcType;

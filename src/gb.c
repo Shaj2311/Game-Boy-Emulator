@@ -39,7 +39,7 @@ void gb_get_cartridge_path(int argc, char **argv)
 	//get path to cartridge
 	if(argc == 2)
 	{
-		gb.romPath = argv[1];
+		gb.cartridgeRomPath = argv[1];
 		return;
 	}
 
@@ -78,7 +78,7 @@ void gb_boot()
 	gb.clock = 0;
 
 	//load cartridge
-	gb_load_cartridge(gb.romPath);
+	gb_load_cartridge(gb.cartridgeRomPath);
 
 	//initialize cartridge RAM
 	gb_init_cartridge_ram();
@@ -140,9 +140,9 @@ void gb_init_cartridge_ram()
 			break;
 	}
 
-	//initialize cartridge RAM
 	if(gb.cartridgeRamSize > 0)
 	{
+		//initialize cartridge RAM
 		gb.cartridgeRAM = calloc(1, gb.cartridgeRamSize);
 		if(!gb.cartridgeRAM)
 		{
@@ -219,7 +219,7 @@ void gb_load_cartridge(const char *cartridge)
 	uint8_t batteryCodes[] = {0x03, 0x09, 0x0F, 0x10, 0x13, 0x1B, 0x1E, 0xFF};
 	for(uint8_t i = 0; batteryCodes[i] != 0xFF; i++)
 	{
-		if(gb.mbcType == i)
+		if(gb.mbcType == batteryCodes[i])
 		{
 			gb.hasBattery = 1;
 			break;
