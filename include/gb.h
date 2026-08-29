@@ -92,6 +92,7 @@ typedef struct
 	MBC_Type mbcType;
 	uint16_t currRomBank;
 	uint8_t hasBattery;
+	char batterySavePath[512];
 
 	//Banking details
 	uint8_t ramEnable;

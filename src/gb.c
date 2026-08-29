@@ -149,6 +149,15 @@ void gb_init_cartridge_ram()
 			puts("Error allocating cartridge RAM");
 			exit(1);
 		}
+
+		//get battery save file path if applicable
+		if(gb.hasBattery)
+		{
+			//get path to ROM
+			strcpy(gb.batterySavePath, gb.cartridgeRomPath);
+			//append .sav
+			strcat(gb.batterySavePath, ".sav");
+		}
 	}
 }
 void gb_load_cartridge(const char *cartridge)
