@@ -26,11 +26,11 @@ uint8_t mmu_read(uint16_t addr)
 
 	//reading from switchable ROM bank (0x4000 - 0x7FFF)
 	else if(addr <= 0x7FFF)
-		return mbcRomRead(addr);
+		val = mbcRomRead(addr);
 
 	//reading from external cartridge RAM
 	else if(addr >= 0xA000 && addr <= 0xBFFF)
-		return mbcRamRead(addr);
+		val = mbcRamRead(addr);
 
 	//tick timers 1 M-cycle
 	for(int i = 0; i < 4; i++)
