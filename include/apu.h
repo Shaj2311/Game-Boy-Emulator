@@ -15,4 +15,7 @@ extern uint8_t dutyPatterns[4];
 void apu_timer_tick();
 uint8_t getCh2Output(); //get current value of wave pattern
 
+void apu_write(uint16_t addr, uint8_t val);
+uint8_t apu_read(uint16_t addr);
+
 #endif

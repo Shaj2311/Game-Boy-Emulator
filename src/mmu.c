@@ -4,6 +4,7 @@
 #include "timers.h"
 #include "ppu.h"
 #include "addr.h"
+#include "apu.h"
 
 uint8_t mmu_read(uint16_t addr)
 {
@@ -31,6 +32,10 @@ uint8_t mmu_read(uint16_t addr)
 	//reading from external cartridge RAM
 	else if(addr >= 0xA000 && addr <= 0xBFFF)
 		val = mbcRamRead(addr);
+
+	//reading from audio registers
+	else if(addr >= 0xFF10 && addr <= 0xFF3F)
+		val = apu_read(addr);
 
 	//tick timers 1 M-cycle
 	for(int i = 0; i < 4; i++)
@@ -245,6 +250,10 @@ void mmu_write(uint16_t addr, uint8_t val)
 	//writing to cartridge RAM
 	else if(addr >= 0xA000 && addr <= 0xBFFF)
 		mbcRamWrite(addr, val);
+
+	//writing to audio registers
+	else if(addr >= 0xFF10 && addr <= 0XFF3F)
+		apu_write(addr, val);
 
 	//writing normally
 	else

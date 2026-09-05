@@ -13,3 +13,8 @@
 #define OBP1_ADDR 0xFF49
 
 #define JOYP_ADDR 0xFF00
+
+#define NR21_ADDR 0XFF16
+#define NR22_ADDR 0XFF17
+#define NR23_ADDR 0XFF18
+#define NR24_ADDR 0XFF19

@@ -26,3 +26,13 @@ uint8_t getCh2Output()
 {
 	return (dutyPatterns[gb.ch2.dutyPattern] >> gb.ch2.dutyIndex) & 0x01;
 }
+
+void apu_write(uint16_t addr, uint8_t val)
+{
+	//TODO
+}
+uint8_t apu_read(uint16_t addr)
+{
+	//TODO
+	return 0;
+}
