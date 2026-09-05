@@ -10,4 +10,6 @@ typedef struct
 	uint8_t dutyIndex;		//current position in duty pattern
 } CH2;
 
+void apu_timer_tick();
+
 #endif

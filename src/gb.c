@@ -271,6 +271,7 @@ void gb_service_interrupts()
 		{
 			gb_timer_tick();
 			ppu_timer_tick();
+			apu_timer_tick();
 		}
 
 		//push current address onto stack
@@ -282,6 +283,7 @@ void gb_service_interrupts()
 		{
 			gb_timer_tick();
 			ppu_timer_tick();
+			apu_timer_tick();
 		}
 
 		//internal M-cycle tick 3
@@ -289,6 +291,7 @@ void gb_service_interrupts()
 		{
 			gb_timer_tick();
 			ppu_timer_tick();
+			apu_timer_tick();
 		}
 
 		//jump to service routine

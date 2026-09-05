@@ -1,6 +1,7 @@
 #ifndef GB_H
 #define GB_H
 #include <stdint.h>
+#include "apu.h"
 
 typedef enum
 {
@@ -77,6 +78,9 @@ typedef struct
 
 	//STAT interrupt checker
 	uint8_t STAT_old_int;
+
+	//Audio channels
+	CH2 ch2;
 
 	//PPU Details
 	uint16_t ppu_cycles;

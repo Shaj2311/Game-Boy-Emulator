@@ -151,6 +151,7 @@ int main(int argc, char **argv)
 				{
 					gb_timer_tick();
 					ppu_timer_tick();
+					apu_timer_tick();
 				}
 
 				continue;

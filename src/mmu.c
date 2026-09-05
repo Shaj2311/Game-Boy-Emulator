@@ -37,6 +37,7 @@ uint8_t mmu_read(uint16_t addr)
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 
 	return val;
@@ -215,6 +216,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 		{
 			gb_timer_tick();
 			ppu_timer_tick();
+			apu_timer_tick();
 		}
 	}
 
@@ -253,6 +255,7 @@ void mmu_write(uint16_t addr, uint8_t val)
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 

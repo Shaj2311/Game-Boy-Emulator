@@ -128,6 +128,7 @@ void ret_cond(uint8_t cond)
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 
 	if(is_cond_true(cond))
@@ -147,6 +148,7 @@ void ret()
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 
@@ -173,6 +175,7 @@ void jp_cond_imm16(uint8_t cond)
 		{
 			gb_timer_tick();
 			ppu_timer_tick();
+			apu_timer_tick();
 		}
 	}
 }
@@ -187,6 +190,7 @@ void jp_imm16()
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 
@@ -208,6 +212,7 @@ void call_cond_imm16(uint8_t cond)
 		{
 			gb_timer_tick();
 			ppu_timer_tick();
+			apu_timer_tick();
 		}
 
 		//call
@@ -231,6 +236,7 @@ void call_imm16()
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 
 	//push address of instruction onto stack
@@ -248,6 +254,7 @@ void rst_tgt3(uint8_t tgt3)
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 
 	//push address of instruction onto stack
@@ -283,6 +290,7 @@ void push_r16stk(uint16_t r16stk)
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 
 	//push register value onto stack
@@ -348,6 +356,7 @@ void add_sp_imm8()
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 
@@ -369,6 +378,7 @@ void ld_hl_spPLUSimm8()
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 
@@ -381,6 +391,7 @@ void ld_sp_hl()
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 

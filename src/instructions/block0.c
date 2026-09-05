@@ -69,6 +69,7 @@ void inc_r16(uint8_t r16)
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 
@@ -85,6 +86,7 @@ void dec_r16(uint8_t r16)
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 
@@ -112,6 +114,7 @@ void add_hl_r16(uint8_t r16)
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 
@@ -314,6 +317,7 @@ void jr_imm8()
 	{
 		gb_timer_tick();
 		ppu_timer_tick();
+		apu_timer_tick();
 	}
 }
 
@@ -329,6 +333,7 @@ void jr_cond_imm8(uint8_t cond)
 		{
 			gb_timer_tick();
 			ppu_timer_tick();
+			apu_timer_tick();
 		}
 	}
 }
