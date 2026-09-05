@@ -113,6 +113,10 @@ void gb_boot()
 	//reset joypad inputs
 	gb.sysbus[JOYP_ADDR] = 0xCF;
 	gb.joypadInputs = 0xFF;
+
+	//reset channel 2 duty pattern and index
+	gb.ch2.dutyPattern = 0;
+	gb.ch2.dutyIndex = 0;
 }
 
 void gb_init_cartridge_ram()

@@ -10,6 +10,9 @@ typedef struct
 	uint8_t dutyIndex;		//current position in duty pattern
 } CH2;
 
+extern uint8_t dutyPatterns[4];
+
 void apu_timer_tick();
+uint8_t getCh2Output(); //get current value of wave pattern
 
 #endif
