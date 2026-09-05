@@ -4,6 +4,7 @@
 
 typedef struct
 {
+	uint16_t currFrequency;		//current frequency of channel
 	uint16_t frequencyTimer;	//down counter
 	uint16_t reloadFrequency;	//reset to this when timer hits zero
 	uint8_t dutyPattern;		//50%, 25% etc.
@@ -13,7 +14,7 @@ typedef struct
 extern uint8_t dutyPatterns[4];
 
 void apu_timer_tick();
-uint8_t getCh2Output(); //get current value of wave pattern
+uint8_t apu_get_ch2_output(); //get current value of wave pattern
 
 void apu_write(uint16_t addr, uint8_t val);
 uint8_t apu_read(uint16_t addr);

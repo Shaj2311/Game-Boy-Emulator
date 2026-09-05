@@ -22,7 +22,7 @@ void apu_timer_tick()
 	}
 }
 
-uint8_t getCh2Output()
+uint8_t apu_get_ch2_output()
 {
 	return (dutyPatterns[gb.ch2.dutyPattern] >> gb.ch2.dutyIndex) & 0x01;
 }
