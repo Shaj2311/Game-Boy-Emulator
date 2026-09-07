@@ -7,8 +7,18 @@ typedef struct
 	uint16_t currFrequency;		//current frequency of channel
 	uint16_t frequencyTimer;	//down counter
 	uint16_t reloadFrequency;	//reset to this when timer hits zero
+
+	uint8_t lengthCounter;		//max duration of currently playing wave
+
 	uint8_t dutyPattern;		//50%, 25% etc.
 	uint8_t dutyIndex;		//current position in duty pattern
+
+	uint8_t dacEnable;
+
+	//envelope details
+	uint8_t envelopeVolume;
+	uint8_t envelopeDirection;
+	uint8_t envelopePeriod;
 } CH2;
 
 extern uint8_t dutyPatterns[4];
