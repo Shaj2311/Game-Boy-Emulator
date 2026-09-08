@@ -53,6 +53,38 @@ void apu_write(uint16_t addr, uint8_t val)
 		gb.ch2.envelopePeriod = val & 0x07;
 		return;
 	}
+
+	if(addr == NR23_ADDR)
+	{
+		//update lower 8 bits of CH2 period value
+		gb.ch2.currFrequency = (gb.ch2.currFrequency & 0x700) | val;
+		gb.ch2.reloadFrequency = 2048 - gb.ch2.currFrequency; //update reload frequency
+		return;
+	}
+
+	if(addr == NR24_ADDR)
+	{
+		//update upper 3 bits of period value
+		gb.ch2.currFrequency = (gb.ch2.currFrequency & 0xFF) | ((val & 0x07) << 8);
+		gb.ch2.reloadFrequency = 2048 - gb.ch2.currFrequency; //update reload frequency
+
+		//check trigger and enable CH2
+		if((val >> 7) == 1)
+		{
+			//reset frequency timer
+			gb.ch2.frequencyTimer = gb.ch2.reloadFrequency;
+			//reset duty
+			gb.ch2.dutyIndex = 0;
+			//reset volume
+			gb.ch2.currentVolume = gb.ch2.envelopeVolume;
+			//reset length timer if expired
+			if(gb.ch2.lengthCounter == 0)
+				gb.ch2.lengthCounter = 64;
+
+			//trigger channel ONLY if DAC is enabled
+			gb.ch2.isActive = gb.ch2.dacEnable;
+		}
+	}
 }
 uint8_t apu_read(uint16_t addr)
 {
@@ -61,10 +93,6 @@ uint8_t apu_read(uint16_t addr)
 		//return duty pattern and length counter
 		return (gb.ch2.dutyPattern << 6) | (gb.ch2.lengthCounter & 0x3F);
 
-	//reading from NR22
-	if(addr == NR22_ADDR)
-		//NR22 is write-only
-		return 0xFF;
-
+	//NR22, NR23, NR24 are write-only
 	return 0xFF;
 }

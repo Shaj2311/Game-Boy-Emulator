@@ -14,6 +14,9 @@ typedef struct
 	uint8_t dutyIndex;		//current position in duty pattern
 
 	uint8_t dacEnable;
+	uint8_t isActive;		//channel enable (depends on DAC)
+
+	uint8_t currentVolume;
 
 	//envelope details
 	uint8_t envelopeVolume;
