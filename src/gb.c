@@ -115,8 +115,8 @@ void gb_boot()
 	gb.joypadInputs = 0xFF;
 
 	//reset channel 2 duty pattern and index
-	gb.ch2.dutyPattern = 0;
-	gb.ch2.dutyIndex = 0;
+	gb.apu.ch2.dutyPattern = 0;
+	gb.apu.ch2.dutyIndex = 0;
 }
 
 void gb_init_cartridge_ram()

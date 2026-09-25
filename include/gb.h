@@ -79,8 +79,8 @@ typedef struct
 	//STAT interrupt checker
 	uint8_t STAT_old_int;
 
-	//Audio channels
-	CH2 ch2;
+	//Audio Processing Unit
+	APU apu;
 
 	//PPU Details
 	uint16_t ppu_cycles;
