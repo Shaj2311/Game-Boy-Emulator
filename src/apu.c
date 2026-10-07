@@ -1,6 +1,7 @@
 #include "apu.h"
 #include "gb.h"
 #include "addr.h"
+#include <string.h>
 
 uint8_t dutyPatterns[4] =
 {
@@ -85,6 +86,48 @@ uint8_t apu_get_ch2_output()
 
 void apu_write(uint16_t addr, uint8_t val)
 {
+	//APU off -> ignore all writes except to NR52
+	if(gb.apu.masterEnable == 0 && addr != NR52_ADDR)
+		return;
+
+	//Master
+	if(addr == NR50_ADDR)
+	{
+		gb.apu.volLeft = (val >> 4) & 0x07;
+		gb.apu.volRight = val & 0x07;
+		return;
+	}
+
+	if(addr == NR51_ADDR)
+	{
+		gb.apu.ch1Right = val & 0x01;
+		gb.apu.ch2Right = (val >> 1) & 0x01;
+		gb.apu.ch3Right = (val >> 2) & 0x01;
+		gb.apu.ch4Right = (val >> 3) & 0x01;
+
+		gb.apu.ch1Left = (val >> 4) & 0x01;
+		gb.apu.ch2Left = (val >> 5) & 0x01;
+		gb.apu.ch3Left = (val >> 6) & 0x01;
+		gb.apu.ch4Left = (val >> 7) & 0x01;
+
+		return;
+	}
+
+	if(addr == NR52_ADDR)
+	{
+		//if setting APU master enable to zero,
+		if(val >> 7 == 0)
+		{
+			//reset all audio registers, preserve frameSeqCycles (DIV-APU)
+			uint32_t cycles = gb.apu.frameSeqCycles;
+			memset(&gb.apu, 0, sizeof(gb.apu));
+			gb.apu.frameSeqCycles = cycles;
+		}
+		else
+			gb.apu.masterEnable = 1;
+		return;
+	}
+
 	//CH2
 	if(addr == NR21_ADDR)
 	{
