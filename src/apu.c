@@ -100,6 +100,8 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//set DAC enable based on upper 5 bits
 		gb.apu.ch2.dacEnable = (val & 0xF8) != 0;
+		//deactivate channel if DAC enable is 0
+		if(gb.apu.ch2.dacEnable == 0) gb.apu.ch2.isActive = 0;
 		//set initial envelope volume
 		gb.apu.ch2.envelopeVolume = val >> 4;
 		//set envelope direction (fade in/out)
@@ -128,8 +130,6 @@ void apu_write(uint16_t addr, uint8_t val)
 		{
 			//reset frequency timer
 			gb.apu.ch2.frequencyTimer = gb.apu.ch2.reloadFrequency;
-			//reset duty
-			gb.apu.ch2.dutyIndex = 0;
 			//reset volume
 			gb.apu.ch2.currentVolume = gb.apu.ch2.envelopeVolume;
 			//reset length timer if expired
