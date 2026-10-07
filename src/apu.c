@@ -13,14 +13,17 @@ uint8_t dutyPatterns[4] =
 
 void apu_timer_tick()
 {
-	//advance channel 2
-
-	//update frequency timer
-	gb.apu.ch2.frequencyTimer--;
-	if(gb.apu.ch2.frequencyTimer == 0)
+	if(gb.apu.masterEnable == 1)
 	{
-		gb.apu.ch2.frequencyTimer = gb.apu.ch2.reloadFrequency;
-		gb.apu.ch2.dutyIndex = (gb.apu.ch2.dutyIndex + 1) % 8;
+		//advance channel 2
+
+		//update frequency timer
+		gb.apu.ch2.frequencyTimer--;
+		if(gb.apu.ch2.frequencyTimer == 0)
+		{
+			gb.apu.ch2.frequencyTimer = gb.apu.ch2.reloadFrequency;
+			gb.apu.ch2.dutyIndex = (gb.apu.ch2.dutyIndex + 1) % 8;
+		}
 	}
 
 	//update frame sequencer
