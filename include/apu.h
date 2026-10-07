@@ -35,6 +35,23 @@ typedef struct
 	//frame sequencer info
 	uint8_t frameSeqStep;
 	uint32_t frameSeqCycles;
+
+	//Master settings
+	uint8_t masterEnable; //NR52 bit 7, audio on/off
+
+	uint8_t volLeft;
+	uint8_t volRight;
+
+	uint8_t ch1Left;
+	uint8_t ch1Right;
+	uint8_t ch2Left;
+	uint8_t ch2Right;
+	uint8_t ch3Left;
+	uint8_t ch3Right;
+	uint8_t ch4Left;
+	uint8_t ch4Right;
+
+
 } APU;
 
 extern uint8_t dutyPatterns[4];

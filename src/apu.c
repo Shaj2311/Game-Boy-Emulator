@@ -146,8 +146,39 @@ void apu_write(uint16_t addr, uint8_t val)
 		gb.apu.ch2.lengthEnable = (val >> 6) & 0x01;
 	}
 }
+
 uint8_t apu_read(uint16_t addr)
 {
+	//reading from NR50
+	if(addr == NR50_ADDR)
+		//VIN values always 0
+		return ((gb.apu.volLeft & 0x07) << 4) | (gb.apu.volRight & 0x07);
+
+	//reading from NR51
+	if(addr == NR51_ADDR)
+		return (
+			(gb.apu.ch4Left & 0x01) << 7
+			| (gb.apu.ch3Left & 0x01) << 6
+			| (gb.apu.ch2Left & 0x01) << 5
+			| (gb.apu.ch1Left & 0x01) << 4
+
+			| (gb.apu.ch4Right & 0x01) << 3
+			| (gb.apu.ch3Right & 0x01) << 2
+			| (gb.apu.ch2Right & 0x01) << 1
+			| (gb.apu.ch1Right & 0x01)
+			);
+
+	//reading from NR52
+	if(addr == NR52_ADDR)
+		return (
+				(gb.apu.masterEnable & 0x01) << 7
+				| 0x70
+				//| gb.apu.ch4.isActive & 0x01 << 3
+				//| gb.apu.ch3.isActive & 0x01 << 2
+				| (gb.apu.ch2.isActive & 0x01) << 1
+				//| gb.apu.ch2.isActive & 0x01
+				);
+
 	//reading from NR21
 	if(addr == NR21_ADDR)
 		//return duty pattern and length counter

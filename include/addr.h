@@ -18,3 +18,7 @@
 #define NR22_ADDR 0XFF17
 #define NR23_ADDR 0XFF18
 #define NR24_ADDR 0XFF19
+
+#define NR50_ADDR 0xFF24
+#define NR51_ADDR 0xFF25
+#define NR52_ADDR 0xFF26
