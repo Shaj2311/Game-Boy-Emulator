@@ -56,6 +56,10 @@ typedef struct
 	int16_t sampleBuffer[8192];
 	uint16_t sampleBufferIndex;
 
+	//DC blocker values
+	int32_t dcLeft;
+	int32_t dcRight;
+
 } APU;
 
 extern uint8_t dutyPatterns[4];

@@ -265,7 +265,22 @@ void apu_mix_sample()
 		if(gb.apu.ch2Right) right += ch2Val * (gb.apu.volRight + 1);
 	}
 
+	//apply DC blocking (prevent pops)
+	int32_t xLeft = (int32_t)left * (32767/120);
+	int32_t xRight = (int32_t)right * (32767/120);
+
+	int32_t yLeft = xLeft - gb.apu.dcLeft;
+	int32_t yRight = xRight - gb.apu.dcRight;
+
+	gb.apu.dcLeft += yLeft >> 8;
+	gb.apu.dcRight += yRight >> 8;
+
+	if(yLeft > 32767) yLeft = 32767;
+	if(yRight > 32767) yRight = 32767;
+	if(yLeft < -32768) yLeft = -32768;
+	if(yRight < -32768) yRight = -32768;
+
 	//mix global left and right outputs to sample buffer (to be outputted)
-	gb.apu.sampleBuffer[gb.apu.sampleBufferIndex++] = (int16_t)(left * (32767/120));
-	gb.apu.sampleBuffer[gb.apu.sampleBufferIndex++] = (int16_t)(right * (32767/120));
+	gb.apu.sampleBuffer[gb.apu.sampleBufferIndex++] = (int16_t)yLeft;
+	gb.apu.sampleBuffer[gb.apu.sampleBufferIndex++] = (int16_t)yRight;
 }
