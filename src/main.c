@@ -11,6 +11,7 @@
 #define GB_FPS 59.73
 #define GB_CYCLES_PER_FRAME (GB_MASTER_CLOCK_FREQ / GB_FPS)
 #define GB_MS_PER_FRAME (1000.0 / GB_FPS)
+#define GB_AUDIO_FREQUENCY 32768
 
 int main(int argc, char **argv)
 {
@@ -18,7 +19,7 @@ int main(int argc, char **argv)
 	gb_get_cartridge_path(argc, argv);
 
 	//Initialize SDL3
-	SDL_Init(SDL_INIT_VIDEO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
 	//Create window
 	SDL_Window *window = SDL_CreateWindow("Game Boy", 160 * 5, 144 * 5, 0);
@@ -27,6 +28,15 @@ int main(int argc, char **argv)
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
 	SDL_Event event;
 	int running = 1;
+
+	//Initialize audio
+	SDL_AudioSpec spec;
+	spec.format = SDL_AUDIO_S16;
+	spec.channels = 2;
+	spec.freq = GB_AUDIO_FREQUENCY;
+	SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec);
+	SDL_AudioStream *audioStream = SDL_CreateAudioStream(&spec, &spec);
+	SDL_BindAudioStream(audioDevice, audioStream);
 
 	//get performance frequency (to convert ticks to milliseconds)
 	uint64_t sdlPerfFreq = SDL_GetPerformanceFrequency();
@@ -170,6 +180,15 @@ int main(int argc, char **argv)
 		SDL_RenderTexture(renderer, texture, 0, 0);
 		SDL_RenderPresent(renderer);
 
+		//output audio
+		if(gb.apu.sampleBufferIndex > 0)
+		{
+			//output audio stream
+			SDL_PutAudioStreamData(audioStream, gb.apu.sampleBuffer, gb.apu.sampleBufferIndex * sizeof(int16_t));
+			//flush samples
+			gb.apu.sampleBufferIndex = 0;
+		}
+
 		//apply frame pacing
 		uint64_t endTicks = SDL_GetPerformanceCounter();
 		double msDelta = ((double)(endTicks - startTicks) / sdlPerfFreq) * 1000;
@@ -184,6 +203,8 @@ int main(int argc, char **argv)
 	puts("Exiting");
 	SDL_DestroyWindow(window);
 	SDL_DestroyRenderer(renderer);
+	SDL_DestroyAudioStream(audioStream);
+	SDL_CloseAudioDevice(audioDevice);
 	free(gb.cartridgeRAM);
 	free(gb.rom);
 	return 0;

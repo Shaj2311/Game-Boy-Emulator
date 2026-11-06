@@ -51,6 +51,10 @@ typedef struct
 	uint8_t ch4Left;
 	uint8_t ch4Right;
 
+	//sample clock for mixing
+	uint8_t sampleClock;
+	int16_t sampleBuffer[8192];
+	uint16_t sampleBufferIndex;
 
 } APU;
 
@@ -61,5 +65,7 @@ uint8_t apu_get_ch2_output(); //get current value of wave pattern
 
 void apu_write(uint16_t addr, uint8_t val);
 uint8_t apu_read(uint16_t addr);
+
+void apu_mix_sample();
 
 #endif

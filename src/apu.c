@@ -75,6 +75,14 @@ void apu_timer_tick()
 		}
 	}
 
+	//update sample clock, mix sample every 128 timer ticks
+	gb.apu.sampleClock++;
+	if (gb.apu.sampleClock == 128)
+	{
+		gb.apu.sampleClock = 0;
+		apu_mix_sample();
+	}
+
 }
 
 uint8_t apu_get_ch2_output()
@@ -232,4 +240,30 @@ uint8_t apu_read(uint16_t addr)
 
 	//NR22, NR23, NR24 are write-only
 	return 0xFF;
+}
+
+
+void apu_mix_sample()
+{
+	int16_t left = 0, right = 0;
+
+	//mix channel 2
+	if(gb.apu.ch2.dacEnable && gb.apu.ch2.isActive)
+	{
+		//get current pattern value (0/1)
+		int8_t ch2Val = ((dutyPatterns[gb.apu.ch2.dutyPattern]) >> gb.apu.ch2.dutyIndex) & 0x01;
+		//apply volume (0..15)
+		ch2Val *= gb.apu.ch2.currentVolume;
+		//center around 0 (-15..15)
+		ch2Val = 15 - (ch2Val * 2);
+
+		//add current ch2 output to global left and right output, apply global volume
+		//left, right: 1..8
+		if(gb.apu.ch2Left) left += ch2Val * (gb.apu.volLeft + 1);
+		if(gb.apu.ch2Right) right += ch2Val * (gb.apu.volRight + 1);
+	}
+
+	//mix global left and right outputs to sample buffer (to be outputted)
+	gb.apu.sampleBuffer[gb.apu.sampleBufferIndex++] = (int16_t)(left * (32767/120));
+	gb.apu.sampleBuffer[gb.apu.sampleBufferIndex++] = (int16_t)(right * (32767/120));
 }
