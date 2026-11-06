@@ -169,7 +169,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update lower 8 bits of CH2 period value
 		gb.apu.ch2.currFrequency = (gb.apu.ch2.currFrequency & 0x700) | val;
-		gb.apu.ch2.reloadFrequency = 2048 - gb.apu.ch2.currFrequency; //update reload frequency
+		gb.apu.ch2.reloadFrequency = (2048 - gb.apu.ch2.currFrequency) * 4; //update reload frequency
 		return;
 	}
 
@@ -177,7 +177,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update upper 3 bits of period value
 		gb.apu.ch2.currFrequency = (gb.apu.ch2.currFrequency & 0xFF) | ((val & 0x07) << 8);
-		gb.apu.ch2.reloadFrequency = 2048 - gb.apu.ch2.currFrequency; //update reload frequency
+		gb.apu.ch2.reloadFrequency = (2048 - gb.apu.ch2.currFrequency) * 4; //update reload frequency
 
 		//check trigger and enable CH2
 		if((val >> 7) == 1)
