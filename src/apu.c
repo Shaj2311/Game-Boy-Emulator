@@ -15,14 +15,17 @@ void apu_timer_tick()
 {
 	if(gb.apu.masterEnable == 1)
 	{
-		//advance channel 2
-
-		//update frequency timer
-		gb.apu.ch2.frequencyTimer--;
-		if(gb.apu.ch2.frequencyTimer == 0)
+		if(gb.apu.ch2.isActive)
 		{
-			gb.apu.ch2.frequencyTimer = gb.apu.ch2.reloadFrequency;
-			gb.apu.ch2.dutyIndex = (gb.apu.ch2.dutyIndex + 1) % 8;
+			//advance channel 2
+
+			//update frequency timer
+			gb.apu.ch2.frequencyTimer--;
+			if(gb.apu.ch2.frequencyTimer == 0)
+			{
+				gb.apu.ch2.frequencyTimer = gb.apu.ch2.reloadFrequency;
+				gb.apu.ch2.dutyIndex = (gb.apu.ch2.dutyIndex + 1) % 8;
+			}
 		}
 	}
 
@@ -51,10 +54,6 @@ void apu_timer_tick()
 		{
 			if(gb.apu.ch2.envelopePeriod > 0)
 			{
-				//advance envelope timer
-				if(gb.apu.ch2.envelopeTimer > 0)
-					gb.apu.ch2.envelopeTimer--;
-
 				//at the end of every period,
 				if(gb.apu.ch2.envelopeTimer == 0)
 				{
@@ -71,6 +70,9 @@ void apu_timer_tick()
 						if(gb.apu.ch2.currentVolume > 0) //apply clamping, volume options range only from 0-15
 							gb.apu.ch2.currentVolume--;
 				}
+				else
+					//advance envelope timer
+					gb.apu.ch2.envelopeTimer--;
 			}
 		}
 	}
@@ -145,7 +147,7 @@ void apu_write(uint16_t addr, uint8_t val)
 		//update duty pattern (bits 7-6)
 		gb.apu.ch2.dutyPattern = val >> 6;
 		//update length counter
-		gb.apu.ch2.lengthCounter = val & 0x3F;
+		gb.apu.ch2.lengthCounter = 64 - (val & 0x3F);
 
 		return;
 	}
@@ -182,8 +184,8 @@ void apu_write(uint16_t addr, uint8_t val)
 		//check trigger and enable CH2
 		if((val >> 7) == 1)
 		{
-			//reset frequency timer
-			gb.apu.ch2.frequencyTimer = gb.apu.ch2.reloadFrequency;
+			//reset frequency timer (preserve lower 2 bits)
+			gb.apu.ch2.frequencyTimer = gb.apu.ch2.reloadFrequency | (gb.apu.ch2.frequencyTimer & 0x0003);
 			//reset volume
 			gb.apu.ch2.currentVolume = gb.apu.ch2.envelopeVolume;
 			//reset length timer if expired
@@ -235,8 +237,8 @@ uint8_t apu_read(uint16_t addr)
 
 	//reading from NR21
 	if(addr == NR21_ADDR)
-		//return duty pattern and length counter
-		return (gb.apu.ch2.dutyPattern << 6) | (gb.apu.ch2.lengthCounter & 0x3F);
+		//return duty pattern only (remaining bits are write-only)
+		return (gb.apu.ch2.dutyPattern << 6) | 0x3F;
 
 	//NR22, NR23, NR24 are write-only
 	return 0xFF;
