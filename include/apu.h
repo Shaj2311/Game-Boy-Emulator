@@ -25,6 +25,13 @@ typedef struct
 	uint8_t envelopeDirection;
 	uint8_t envelopePeriod;
 
+	//sweep details
+	uint8_t sweepPace;	//how often a sweep iteration runs
+	uint8_t sweepDirection;	//in which direction the frequency changes
+	uint8_t sweepStep;	//step taken at every tick of sweep timer
+	uint8_t sweepTimer;	//separate timer for sweeps
+	uint16_t sweepShadow;	//copy of channel period
+
 } CH1;
 
 typedef struct
@@ -97,5 +104,11 @@ void apu_write(uint16_t addr, uint8_t val);
 uint8_t apu_read(uint16_t addr);
 
 void apu_mix_sample();
+
+uint16_t apu_get_ch1_sweep(uint16_t shadow);
+void apu_ch1_sweep_tick();
+void apu_ch1_sweep_trigger();
+
+uint16_t getReloadFrequency(uint16_t currFrequency);
 
 #endif

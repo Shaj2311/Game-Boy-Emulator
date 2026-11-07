@@ -62,6 +62,10 @@ void apu_timer_tick()
 			if(gb.apu.ch2.lengthCounter == 0) gb.apu.ch2.isActive = 0;
 		}
 
+		//update channel 1 sweep timer
+		if(gb.apu.frameSeqStep == 2 || gb.apu.frameSeqStep == 6)
+			apu_ch1_sweep_tick();
+
 		//update envelopes (on step 7)
 		if(gb.apu.frameSeqStep == 7)
 		{
@@ -202,7 +206,22 @@ void apu_write(uint16_t addr, uint8_t val)
 	//CH1
 	if(addr == NR10_ADDR)
 	{
-		//TODO
+		//record old pace
+		uint8_t oldPace = gb.apu.ch1.sweepPace;
+
+		//update sweep details
+		gb.apu.ch1.sweepStep = val & 0x07;
+		gb.apu.ch1.sweepDirection = (val >> 3) & 0x01;
+		gb.apu.ch1.sweepPace = (val >> 4) & 0x07;
+
+		//disable sweep if new pace is zero
+		if(gb.apu.ch1.sweepPace == 0)
+			gb.apu.ch1.sweepTimer = 0;
+		//otherwise, restart timer if it was previously disabled
+		else if(oldPace == 0)
+			gb.apu.ch1.sweepTimer = gb.apu.ch1.sweepPace;
+
+		return;
 	}
 
 	if(addr == NR11_ADDR)
@@ -234,7 +253,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update lower 8 bits of CH1 period value
 		gb.apu.ch1.currFrequency = (gb.apu.ch1.currFrequency & 0x700) | val;
-		gb.apu.ch1.reloadFrequency = (2048 - gb.apu.ch1.currFrequency) * 4; //update reload frequency
+		gb.apu.ch1.reloadFrequency = getReloadFrequency(gb.apu.ch1.currFrequency); //update reload frequency
 		return;
 	}
 
@@ -242,7 +261,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update upper 3 bits of period value
 		gb.apu.ch1.currFrequency = (gb.apu.ch1.currFrequency & 0xFF) | ((val & 0x07) << 8);
-		gb.apu.ch1.reloadFrequency = (2048 - gb.apu.ch1.currFrequency) * 4; //update reload frequency
+		gb.apu.ch1.reloadFrequency = getReloadFrequency(gb.apu.ch1.currFrequency); //update reload frequency
 
 		//check trigger and enable CH1
 		if((val >> 7) == 1)
@@ -259,6 +278,7 @@ void apu_write(uint16_t addr, uint8_t val)
 
 			//trigger channel ONLY if DAC is enabled
 			gb.apu.ch1.isActive = gb.apu.ch1.dacEnable;
+			apu_ch1_sweep_trigger();
 		}
 
 		//update length enable
@@ -297,7 +317,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update lower 8 bits of CH2 period value
 		gb.apu.ch2.currFrequency = (gb.apu.ch2.currFrequency & 0x700) | val;
-		gb.apu.ch2.reloadFrequency = (2048 - gb.apu.ch2.currFrequency) * 4; //update reload frequency
+		gb.apu.ch2.reloadFrequency = getReloadFrequency(gb.apu.ch2.currFrequency); //update reload frequency
 		return;
 	}
 
@@ -305,7 +325,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update upper 3 bits of period value
 		gb.apu.ch2.currFrequency = (gb.apu.ch2.currFrequency & 0xFF) | ((val & 0x07) << 8);
-		gb.apu.ch2.reloadFrequency = (2048 - gb.apu.ch2.currFrequency) * 4; //update reload frequency
+		gb.apu.ch2.reloadFrequency = getReloadFrequency(gb.apu.ch2.currFrequency); //update reload frequency
 
 		//check trigger and enable CH2
 		if((val >> 7) == 1)
@@ -364,8 +384,10 @@ uint8_t apu_read(uint16_t addr)
 
 	//reading from NR10
 	if(addr == NR10_ADDR)
-		//TODO
-		return 0xFF;
+		return 0x80
+		| (gb.apu.ch1.sweepPace << 4)
+		| (gb.apu.ch1.sweepDirection << 3)
+		| (gb.apu.ch1.sweepStep);
 
 	//reading from NR11
 	if(addr == NR11_ADDR)
@@ -464,4 +486,73 @@ void apu_mix_sample()
 	//mix global left and right outputs to sample buffer (to be outputted)
 	gb.apu.sampleBuffer[gb.apu.sampleBufferIndex++] = (int16_t)yLeft;
 	gb.apu.sampleBuffer[gb.apu.sampleBufferIndex++] = (int16_t)yRight;
+}
+
+uint16_t apu_get_ch1_sweep(uint16_t shadow)
+{
+	//return shadow +- sweepStep
+	uint16_t delta = shadow >> gb.apu.ch1.sweepStep;
+	return (gb.apu.ch1.sweepDirection == 1) ? shadow - delta : shadow + delta;
+}
+
+void apu_ch1_sweep_tick()
+{
+	//skip if sweep disabled
+	if(gb.apu.ch1.sweepPace == 0)
+		return;
+
+	//advance sweep timer
+	if(gb.apu.ch1.sweepTimer > 0)
+		gb.apu.ch1.sweepTimer--;
+
+	if(gb.apu.ch1.sweepTimer != 0)
+		return;
+
+	//when timer reaches zero,
+
+	//reset timer
+	gb.apu.ch1.sweepTimer = gb.apu.ch1.sweepPace;
+
+	uint16_t nextSweepValue = apu_get_ch1_sweep(gb.apu.ch1.sweepShadow);
+	//check overflow, disable CH1 if needed
+	if(nextSweepValue > 0x7FF)
+	{
+		gb.apu.ch1.isActive = 0;
+		return;
+	}
+
+	//update frequency
+	if(gb.apu.ch1.sweepStep != 0)
+	{
+		gb.apu.ch1.sweepShadow = nextSweepValue;
+		gb.apu.ch1.currFrequency = nextSweepValue;
+		gb.apu.ch1.reloadFrequency = getReloadFrequency(nextSweepValue);
+
+		//check overflow, disable CH1 if needed
+		if(apu_get_ch1_sweep(gb.apu.ch1.sweepShadow) > 0x7FF)
+			gb.apu.ch1.isActive = 0;
+	}
+}
+
+void apu_ch1_sweep_trigger()
+{
+	//update shadow to current frequency
+	gb.apu.ch1.sweepShadow = gb.apu.ch1.currFrequency & 0x7FF;
+	//reset sweep timer
+	gb.apu.ch1.sweepTimer = gb.apu.ch1.sweepPace;
+
+	//disable CH1 if overflow occurs
+	if(gb.apu.ch1.sweepStep != 0 && apu_get_ch1_sweep(gb.apu.ch1.sweepShadow) > 0x7FF)
+		gb.apu.ch1.isActive = 0;
+
+
+}
+
+
+
+
+
+uint16_t getReloadFrequency(uint16_t currFrequency)
+{
+	return (2048 - currFrequency) * 4;
 }
