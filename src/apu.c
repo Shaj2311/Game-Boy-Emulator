@@ -99,9 +99,17 @@ uint8_t apu_get_ch2_output()
 
 void apu_write(uint16_t addr, uint8_t val)
 {
-	//APU off -> ignore all writes except to NR52
-	if(gb.apu.masterEnable == 0 && addr != NR52_ADDR)
-		return;
+	//APU off
+	if(gb.apu.masterEnable == 0)
+	{
+		//Allow writes to lower 6 bits of NRx1 registers
+		if(/*addr == NR11_ADDR || */addr == NR21_ADDR/* || addr == NR31_ADDR || addr == NR41_ADDR*/)
+			val &= 0x3F;
+		//Allow writes to NR52 master control
+		else if(addr != NR52_ADDR)
+			return;
+		//All other registers are read-only
+	}
 
 	//Master
 	if(addr == NR50_ADDR)
