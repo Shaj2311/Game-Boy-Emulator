@@ -261,6 +261,8 @@ uint8_t apu_read(uint16_t addr)
 	if(addr == NR24_ADDR)
 		//only bit 6 is readable
 		return (gb.apu.ch2.lengthEnable << 6) | 0xBF;
+
+	return 0xFF;
 }
 
 
