@@ -15,6 +15,19 @@ void apu_timer_tick()
 {
 	if(gb.apu.masterEnable == 1)
 	{
+		if(gb.apu.ch1.isActive)
+		{
+			//advance channel 1
+
+			//update frequency timer
+			gb.apu.ch1.frequencyTimer--;
+			if(gb.apu.ch1.frequencyTimer == 0)
+			{
+				gb.apu.ch1.frequencyTimer = gb.apu.ch1.reloadFrequency;
+				gb.apu.ch1.dutyIndex = (gb.apu.ch1.dutyIndex + 1) % 8;
+			}
+		}
+
 		if(gb.apu.ch2.isActive)
 		{
 			//advance channel 2
@@ -41,20 +54,47 @@ void apu_timer_tick()
 		if(gb.apu.frameSeqStep % 2 == 0)
 		{
 			//advance length counter if > 0
-			if(gb.apu.ch2.lengthEnable && gb.apu.ch2.lengthCounter > 0)
-				gb.apu.ch2.lengthCounter--;
+			if(gb.apu.ch1.lengthEnable && gb.apu.ch1.lengthCounter > 0) gb.apu.ch1.lengthCounter--;
+			if(gb.apu.ch2.lengthEnable && gb.apu.ch2.lengthCounter > 0) gb.apu.ch2.lengthCounter--;
 
 			//if length counter hit zero, stop playing
-			if(gb.apu.ch2.lengthCounter == 0)
-				gb.apu.ch2.isActive = 0;
+			if(gb.apu.ch1.lengthCounter == 0) gb.apu.ch1.isActive = 0;
+			if(gb.apu.ch2.lengthCounter == 0) gb.apu.ch2.isActive = 0;
 		}
 
 		//update envelopes (on step 7)
 		if(gb.apu.frameSeqStep == 7)
 		{
+			if(gb.apu.ch1.envelopePeriod > 0)
+			{
+				//at the end of every period,
+
+				//update channel 1 envelope
+				if(gb.apu.ch1.envelopeTimer == 0)
+				{
+					//reset envelope timer
+					gb.apu.ch1.envelopeTimer = gb.apu.ch1.envelopePeriod;
+
+					//update volume based on envelope direction
+					if(gb.apu.ch1.envelopeDirection == 1)
+					{
+						if(gb.apu.ch1.currentVolume < 15) //apply clamping, volume options range only from 0-15
+							gb.apu.ch1.currentVolume++;
+					}
+					else
+						if(gb.apu.ch1.currentVolume > 0) //apply clamping, volume options range only from 0-15
+							gb.apu.ch1.currentVolume--;
+				}
+				else
+					//advance envelope timer
+					gb.apu.ch1.envelopeTimer--;
+			}
+
 			if(gb.apu.ch2.envelopePeriod > 0)
 			{
 				//at the end of every period,
+
+				//update channel 2 envelope
 				if(gb.apu.ch2.envelopeTimer == 0)
 				{
 					//reset envelope timer
@@ -87,6 +127,16 @@ void apu_timer_tick()
 
 }
 
+uint8_t apu_get_ch1_output()
+{
+	//Channel is silent if channel is disabled or DAC is disabled
+	if(!gb.apu.ch1.dacEnable || !gb.apu.ch1.isActive) return 0;
+
+	//return current output of channel 1
+	int currWaveStep = (dutyPatterns[gb.apu.ch1.dutyPattern] >> gb.apu.ch1.dutyIndex) & 0x01; //0 or 1
+	return currWaveStep * gb.apu.ch1.currentVolume; //apply envelope
+}
+
 uint8_t apu_get_ch2_output()
 {
 	//Channel is silent if channel is disabled or DAC is disabled
@@ -103,7 +153,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	if(gb.apu.masterEnable == 0)
 	{
 		//Allow writes to lower 6 bits of NRx1 registers
-		if(/*addr == NR11_ADDR || */addr == NR21_ADDR/* || addr == NR31_ADDR || addr == NR41_ADDR*/)
+		if(addr == NR11_ADDR || addr == NR21_ADDR/* || addr == NR31_ADDR || addr == NR41_ADDR*/)
 			val &= 0x3F;
 		//Allow writes to NR52 master control
 		else if(addr != NR52_ADDR)
@@ -148,6 +198,74 @@ void apu_write(uint16_t addr, uint8_t val)
 			gb.apu.masterEnable = 1;
 		return;
 	}
+
+	//CH1
+	if(addr == NR10_ADDR)
+	{
+		//TODO
+	}
+
+	if(addr == NR11_ADDR)
+	{
+		//update duty pattern (bits 7-6)
+		gb.apu.ch1.dutyPattern = val >> 6;
+		//update length counter
+		gb.apu.ch1.lengthCounter = 64 - (val & 0x3F);
+
+		return;
+	}
+
+	if(addr == NR12_ADDR)
+	{
+		//set DAC enable based on upper 5 bits
+		gb.apu.ch1.dacEnable = (val & 0xF8) != 0;
+		//deactivate channel if DAC enable is 0
+		if(gb.apu.ch1.dacEnable == 0) gb.apu.ch1.isActive = 0;
+		//set initial envelope volume
+		gb.apu.ch1.envelopeVolume = val >> 4;
+		//set envelope direction (fade in/out)
+		gb.apu.ch1.envelopeDirection = (val >> 3) & 0x01;
+		//set envelope period
+		gb.apu.ch1.envelopePeriod = val & 0x07;
+		return;
+	}
+
+	if(addr == NR13_ADDR)
+	{
+		//update lower 8 bits of CH1 period value
+		gb.apu.ch1.currFrequency = (gb.apu.ch1.currFrequency & 0x700) | val;
+		gb.apu.ch1.reloadFrequency = (2048 - gb.apu.ch1.currFrequency) * 4; //update reload frequency
+		return;
+	}
+
+	if(addr == NR14_ADDR)
+	{
+		//update upper 3 bits of period value
+		gb.apu.ch1.currFrequency = (gb.apu.ch1.currFrequency & 0xFF) | ((val & 0x07) << 8);
+		gb.apu.ch1.reloadFrequency = (2048 - gb.apu.ch1.currFrequency) * 4; //update reload frequency
+
+		//check trigger and enable CH1
+		if((val >> 7) == 1)
+		{
+			//reset frequency timer (preserve lower 2 bits)
+			gb.apu.ch1.frequencyTimer = gb.apu.ch1.reloadFrequency | (gb.apu.ch1.frequencyTimer & 0x0003);
+			//reset volume
+			gb.apu.ch1.currentVolume = gb.apu.ch1.envelopeVolume;
+			//reset length timer if expired
+			if(gb.apu.ch1.lengthCounter == 0)
+				gb.apu.ch1.lengthCounter = 64;
+			//reset envelope timer
+			gb.apu.ch1.envelopeTimer = gb.apu.ch1.envelopePeriod;
+
+			//trigger channel ONLY if DAC is enabled
+			gb.apu.ch1.isActive = gb.apu.ch1.dacEnable;
+		}
+
+		//update length enable
+		gb.apu.ch1.lengthEnable = (val >> 6) & 0x01;
+	}
+
+
 
 	//CH2
 	if(addr == NR21_ADDR)
@@ -240,8 +358,34 @@ uint8_t apu_read(uint16_t addr)
 				//| gb.apu.ch4.isActive & 0x01 << 3
 				//| gb.apu.ch3.isActive & 0x01 << 2
 				| (gb.apu.ch2.isActive & 0x01) << 1
-				//| gb.apu.ch2.isActive & 0x01
+				| (gb.apu.ch1.isActive & 0x01)
 				);
+
+
+	//reading from NR10
+	if(addr == NR10_ADDR)
+		//TODO
+		return 0xFF;
+
+	//reading from NR11
+	if(addr == NR11_ADDR)
+		//return duty pattern only (remaining bits are write-only)
+		return (gb.apu.ch1.dutyPattern << 6) | 0x3F;
+
+	//reading from NR12
+	if(addr == NR12_ADDR)
+		//return NR12
+		return (gb.apu.ch1.envelopeVolume << 4) | (gb.apu.ch1.envelopeDirection << 3) | gb.apu.ch1.envelopePeriod;
+
+	//reading from NR13
+	if(addr == NR13_ADDR)
+		//NR13 is write-only
+		return 0xFF;
+
+	if(addr == NR14_ADDR)
+		//only bit 6 is readable
+		return (gb.apu.ch1.lengthEnable << 6) | 0xBF;
+
 
 	//reading from NR21
 	if(addr == NR21_ADDR)
@@ -269,6 +413,22 @@ uint8_t apu_read(uint16_t addr)
 void apu_mix_sample()
 {
 	int16_t left = 0, right = 0;
+
+	//mix channel 1
+	if(gb.apu.ch1.dacEnable && gb.apu.ch1.isActive)
+	{
+		//get current pattern value (0/1)
+		int8_t ch1Val = ((dutyPatterns[gb.apu.ch1.dutyPattern]) >> gb.apu.ch1.dutyIndex) & 0x01;
+		//apply volume (0..15)
+		ch1Val *= gb.apu.ch1.currentVolume;
+		//center around 0 (-15..15)
+		ch1Val = 15 - (ch1Val * 2);
+
+		//add current ch1 output to global left and right output, apply global volume
+		//left, right: 1..8
+		if(gb.apu.ch1Left) left += ch1Val * (gb.apu.volLeft + 1);
+		if(gb.apu.ch1Right) right += ch1Val * (gb.apu.volRight + 1);
+	}
 
 	//mix channel 2
 	if(gb.apu.ch2.dacEnable && gb.apu.ch2.isActive)

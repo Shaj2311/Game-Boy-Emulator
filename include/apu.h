@@ -25,11 +25,37 @@ typedef struct
 	uint8_t envelopeDirection;
 	uint8_t envelopePeriod;
 
+} CH1;
+
+typedef struct
+{
+	uint16_t currFrequency;		//current frequency of channel
+	uint16_t frequencyTimer;	//down counter
+	uint16_t reloadFrequency;	//reset to this when timer hits zero
+
+	uint8_t lengthEnable;
+	uint8_t lengthCounter;		//max duration of currently playing wave
+
+	uint8_t dutyPattern;		//50%, 25% etc.
+	uint8_t dutyIndex;		//current position in duty pattern
+
+	uint8_t dacEnable;		// Enable for DAC (Digital-Analog Converter)
+	uint8_t isActive;		//channel enable (depends on DAC)
+
+	uint8_t currentVolume;
+
+	//envelope details
+	uint8_t envelopeTimer;
+	uint8_t envelopeVolume;
+	uint8_t envelopeDirection;
+	uint8_t envelopePeriod;
+
 } CH2;
 
 typedef struct
 {
 	//Channels
+	CH1 ch1;
 	CH2 ch2;
 
 	//frame sequencer info
