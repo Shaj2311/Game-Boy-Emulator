@@ -240,8 +240,19 @@ uint8_t apu_read(uint16_t addr)
 		//return duty pattern only (remaining bits are write-only)
 		return (gb.apu.ch2.dutyPattern << 6) | 0x3F;
 
-	//NR22, NR23, NR24 are write-only
-	return 0xFF;
+	//reading from NR22
+	if(addr == NR22_ADDR)
+		//return NR22
+		return (gb.apu.ch2.envelopeVolume << 4) | (gb.apu.ch2.envelopeDirection << 3) | gb.apu.ch2.envelopePeriod;
+
+	//reading from NR23
+	if(addr == NR23_ADDR)
+		//NR23 is write-only
+		return 0xFF;
+
+	if(addr == NR24_ADDR)
+		//only bit 6 is readable
+		return (gb.apu.ch2.lengthEnable << 6) | 0xBF;
 }
 
 
@@ -266,8 +277,8 @@ void apu_mix_sample()
 	}
 
 	//apply DC blocking (prevent pops)
-	int32_t xLeft = (int32_t)left * (32767/120);
-	int32_t xRight = (int32_t)right * (32767/120);
+	int32_t xLeft = (int32_t)left * (32767/480);
+	int32_t xRight = (int32_t)right * (32767/480);
 
 	int32_t yLeft = xLeft - gb.apu.dcLeft;
 	int32_t yRight = xRight - gb.apu.dcRight;
