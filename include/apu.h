@@ -61,9 +61,36 @@ typedef struct
 
 typedef struct
 {
+	uint16_t lfsr;			//linear feedback shift register
+
+	uint32_t frequencyTimer;	//down counter
+
+	uint8_t clockShift;
+	uint8_t clockDivider;
+	uint8_t is7bit;
+
+	uint8_t lengthEnable;
+	uint8_t lengthCounter;		//max duration of currently playing wave
+
+	uint8_t dacEnable;		// Enable for DAC (Digital-Analog Converter)
+	uint8_t isActive;		//channel enable (depends on DAC)
+
+	uint8_t currentVolume;
+
+	//envelope details
+	uint8_t envelopeTimer;
+	uint8_t envelopeVolume;
+	uint8_t envelopeDirection;
+	uint8_t envelopePeriod;
+
+} CH4;
+
+typedef struct
+{
 	//Channels
 	CH1 ch1;
 	CH2 ch2;
+	CH4 ch4;
 
 	//frame sequencer info
 	uint8_t frameSeqStep;
@@ -109,6 +136,10 @@ uint16_t apu_get_ch1_sweep(uint16_t shadow);
 void apu_ch1_sweep_tick();
 void apu_ch1_sweep_trigger();
 
+void apu_ch4_lfsr_step();
+uint16_t getCH4ReloadFrequency();
+
 uint16_t getReloadFrequency(uint16_t currFrequency);
+
 
 #endif

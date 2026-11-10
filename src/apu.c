@@ -40,6 +40,19 @@ void apu_timer_tick()
 				gb.apu.ch2.dutyIndex = (gb.apu.ch2.dutyIndex + 1) % 8;
 			}
 		}
+
+		if(gb.apu.ch4.isActive)
+		{
+			//advance channel 4
+
+			//update frequency timer
+			gb.apu.ch4.frequencyTimer--;
+			if(gb.apu.ch4.frequencyTimer == 0)
+			{
+				gb.apu.ch4.frequencyTimer = getCH4ReloadFrequency();
+				apu_ch4_lfsr_step();
+			}
+		}
 	}
 
 	//update frame sequencer
@@ -549,6 +562,34 @@ void apu_ch1_sweep_trigger()
 }
 
 
+
+uint16_t getCH4ReloadFrequency()
+{
+	//convert NR43 fields to T-cycle value
+	if(gb.apu.ch4.clockShift >= 14) return 0; //channel stopped
+	if(gb.apu.ch4.clockDivider == 0) return (1 << (gb.apu.ch4.clockShift + 4));
+	else return (gb.apu.ch4.clockDivider << (gb.apu.ch4.clockShift + 4));
+}
+
+void apu_ch4_lfsr_step()
+{
+	//take xnor of LFSR bit 0 and 1
+	uint16_t *lfsr = &gb.apu.ch4.lfsr;
+	uint8_t feedback = !((*lfsr & 1) ^ ((*lfsr >> 1) & 0x01));
+
+	//step lfsr forward
+	*lfsr >>= 1;
+
+	//write feedback to bit 14
+	if(feedback == 1)
+	{
+		*lfsr |= 0x4000;
+		//also write feedback to bit 6 if LFSR is in 7-bit mode
+		if(gb.apu.ch4.is7bit)
+			*lfsr |= 0x40;
+	}
+
+}
 
 
 
