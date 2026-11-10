@@ -137,7 +137,7 @@ void apu_ch1_sweep_tick();
 void apu_ch1_sweep_trigger();
 
 void apu_ch4_lfsr_step();
-uint16_t getCH4ReloadFrequency();
+uint32_t getCH4ReloadFrequency();
 
 uint16_t getReloadFrequency(uint16_t currFrequency);
 

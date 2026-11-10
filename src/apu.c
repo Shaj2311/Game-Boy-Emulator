@@ -44,13 +44,15 @@ void apu_timer_tick()
 		if(gb.apu.ch4.isActive)
 		{
 			//advance channel 4
-
-			//update frequency timer
-			gb.apu.ch4.frequencyTimer--;
-			if(gb.apu.ch4.frequencyTimer == 0)
+			if(gb.apu.ch4.clockShift < 14)
 			{
-				gb.apu.ch4.frequencyTimer = getCH4ReloadFrequency();
-				apu_ch4_lfsr_step();
+				//update frequency timer
+				gb.apu.ch4.frequencyTimer--;
+				if(gb.apu.ch4.frequencyTimer == 0)
+				{
+					gb.apu.ch4.frequencyTimer = getCH4ReloadFrequency();
+					apu_ch4_lfsr_step();
+				}
 			}
 		}
 	}
@@ -69,10 +71,12 @@ void apu_timer_tick()
 			//advance length counter if > 0
 			if(gb.apu.ch1.lengthEnable && gb.apu.ch1.lengthCounter > 0) gb.apu.ch1.lengthCounter--;
 			if(gb.apu.ch2.lengthEnable && gb.apu.ch2.lengthCounter > 0) gb.apu.ch2.lengthCounter--;
+			if(gb.apu.ch4.lengthEnable && gb.apu.ch4.lengthCounter > 0) gb.apu.ch4.lengthCounter--;
 
 			//if length counter hit zero, stop playing
 			if(gb.apu.ch1.lengthCounter == 0) gb.apu.ch1.isActive = 0;
 			if(gb.apu.ch2.lengthCounter == 0) gb.apu.ch2.isActive = 0;
+			if(gb.apu.ch4.lengthCounter == 0) gb.apu.ch4.isActive = 0;
 		}
 
 		//update channel 1 sweep timer
@@ -131,6 +135,31 @@ void apu_timer_tick()
 					//advance envelope timer
 					gb.apu.ch2.envelopeTimer--;
 			}
+
+			if(gb.apu.ch4.envelopePeriod > 0)
+			{
+				//at the end of every period,
+
+				//update channel 4 envelope
+				if(gb.apu.ch4.envelopeTimer == 0)
+				{
+					//reset envelope timer
+					gb.apu.ch4.envelopeTimer = gb.apu.ch4.envelopePeriod;
+
+					//update volume based on envelope direction
+					if(gb.apu.ch4.envelopeDirection == 1)
+					{
+						if(gb.apu.ch4.currentVolume < 15) //apply clamping, volume options range only from 0-15
+							gb.apu.ch4.currentVolume++;
+					}
+					else
+						if(gb.apu.ch4.currentVolume > 0) //apply clamping, volume options range only from 0-15
+							gb.apu.ch4.currentVolume--;
+				}
+				else
+					//advance envelope timer
+					gb.apu.ch4.envelopeTimer--;
+			}
 		}
 	}
 
@@ -170,7 +199,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	if(gb.apu.masterEnable == 0)
 	{
 		//Allow writes to lower 6 bits of NRx1 registers
-		if(addr == NR11_ADDR || addr == NR21_ADDR/* || addr == NR31_ADDR || addr == NR41_ADDR*/)
+		if(addr == NR11_ADDR || addr == NR21_ADDR/* || addr == NR31_ADDR*/ || addr == NR41_ADDR)
 			val &= 0x3F;
 		//Allow writes to NR52 master control
 		else if(addr != NR52_ADDR)
@@ -390,6 +419,7 @@ void apu_write(uint16_t addr, uint8_t val)
 		gb.apu.ch4.clockShift = (val >> 4) & 0x0F;
 		gb.apu.ch4.is7bit = (val >> 3) & 0x01;
 		gb.apu.ch4.clockDivider = val & 0x07;
+		return;
 	}
 
 	if(addr == NR44_ADDR)
@@ -397,11 +427,12 @@ void apu_write(uint16_t addr, uint8_t val)
 		//check trigger
 		if((val >> 7) == 1)
 		{
-			gb.apu.ch4.isActive = 1; //enable CH4
+			gb.apu.ch4.isActive = gb.apu.ch4.dacEnable; //enable CH4
 			if(gb.apu.ch4.lengthCounter == 0) gb.apu.ch4.lengthCounter = 64; //reset length counter
 			gb.apu.ch4.envelopeTimer = gb.apu.ch4.envelopePeriod; //reset envelope timer
 			gb.apu.ch4.currentVolume = gb.apu.ch4.envelopeVolume; //reset volume
 			gb.apu.ch4.lfsr = 0; //reset LFSR
+			gb.apu.ch4.frequencyTimer = getCH4ReloadFrequency(); //reset frequency timer
 		}
 
 		//update length enable
@@ -436,7 +467,7 @@ uint8_t apu_read(uint16_t addr)
 		return (
 				(gb.apu.masterEnable & 0x01) << 7
 				| 0x70
-				| gb.apu.ch4.isActive & 0x01 << 3
+				| (gb.apu.ch4.isActive & 0x01) << 3
 				//| gb.apu.ch3.isActive & 0x01 << 2
 				| (gb.apu.ch2.isActive & 0x01) << 1
 				| (gb.apu.ch1.isActive & 0x01)
@@ -496,7 +527,7 @@ uint8_t apu_read(uint16_t addr)
 		return 0xFF;
 
 	//reading from NR42
-	if(addr == NR24_ADDR)
+	if(addr == NR42_ADDR)
 		//return NR42
 		return (gb.apu.ch4.envelopeVolume << 4) | (gb.apu.ch4.envelopeDirection << 3) | gb.apu.ch4.envelopePeriod;
 
@@ -548,6 +579,22 @@ void apu_mix_sample()
 		//left, right: 1..8
 		if(gb.apu.ch2Left) left += ch2Val * (gb.apu.volLeft + 1);
 		if(gb.apu.ch2Right) right += ch2Val * (gb.apu.volRight + 1);
+	}
+
+	//mix channel 4
+	if(gb.apu.ch4.dacEnable && gb.apu.ch4.isActive)
+	{
+		//get current lfsr value (0/1)
+		int8_t ch4Val = gb.apu.ch4.lfsr & 0x01;
+		//apply volume (0..15)
+		ch4Val *= gb.apu.ch4.currentVolume;
+		//center around 0 (-15..15)
+		ch4Val = 15 - (ch4Val * 2);
+
+		//add current ch4 output to global left and right output, apply global volume
+		//left, right: 1..8
+		if(gb.apu.ch4Left) left += ch4Val * (gb.apu.volLeft + 1);
+		if(gb.apu.ch4Right) right += ch4Val * (gb.apu.volRight + 1);
 	}
 
 	//apply DC blocking (prevent pops)
@@ -632,11 +679,11 @@ void apu_ch1_sweep_trigger()
 
 
 
-uint16_t getCH4ReloadFrequency()
+uint32_t getCH4ReloadFrequency()
 {
 	//convert NR43 fields to T-cycle value
 	if(gb.apu.ch4.clockShift >= 14) return 0; //channel stopped
-	if(gb.apu.ch4.clockDivider == 0) return (1 << (gb.apu.ch4.clockShift + 4));
+	if(gb.apu.ch4.clockDivider == 0) return (1 << (gb.apu.ch4.clockShift + 3));
 	else return (gb.apu.ch4.clockDivider << (gb.apu.ch4.clockShift + 4));
 }
 
@@ -656,6 +703,13 @@ void apu_ch4_lfsr_step()
 		//also write feedback to bit 6 if LFSR is in 7-bit mode
 		if(gb.apu.ch4.is7bit)
 			*lfsr |= 0x40;
+	}
+	else
+	{
+		*lfsr &= 0xBFFF;
+		//also write feedback to bit 6 if LFSR is in 7-bit mode
+		if(gb.apu.ch4.is7bit)
+			*lfsr &= 0xBF;
 	}
 
 }
