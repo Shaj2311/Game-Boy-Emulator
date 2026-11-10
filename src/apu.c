@@ -360,6 +360,54 @@ void apu_write(uint16_t addr, uint8_t val)
 		//update length enable
 		gb.apu.ch2.lengthEnable = (val >> 6) & 0x01;
 	}
+
+
+	//CH4
+	if(addr == NR41_ADDR)
+	{
+		//update length counter (lower 6 bits)
+		gb.apu.ch4.lengthCounter = 64 - (val & 0x3F);
+		return;
+	}
+
+	if(addr == NR42_ADDR)
+	{
+		//set DAC enable based on upper 5 bits
+		gb.apu.ch4.dacEnable = (val & 0xF8) != 0;
+		//deactivate channel if DAC enable is 0
+		if(gb.apu.ch4.dacEnable == 0) gb.apu.ch4.isActive = 0;
+		//set initial envelope volume
+		gb.apu.ch4.envelopeVolume = val >> 4;
+		//set envelope direction (fade in/out)
+		gb.apu.ch4.envelopeDirection = (val >> 3) & 0x01;
+		//set envelope period
+		gb.apu.ch4.envelopePeriod = val & 0x07;
+		return;
+	}
+
+	if(addr == NR43_ADDR)
+	{
+		gb.apu.ch4.clockShift = (val >> 4) & 0x0F;
+		gb.apu.ch4.is7bit = (val >> 3) & 0x01;
+		gb.apu.ch4.clockDivider = val & 0x07;
+	}
+
+	if(addr == NR44_ADDR)
+	{
+		//check trigger
+		if((val >> 7) == 1)
+		{
+			gb.apu.ch4.isActive = 1; //enable CH4
+			if(gb.apu.ch4.lengthCounter == 0) gb.apu.ch4.lengthCounter = 64; //reset length counter
+			gb.apu.ch4.envelopeTimer = gb.apu.ch4.envelopePeriod; //reset envelope timer
+			gb.apu.ch4.currentVolume = gb.apu.ch4.envelopeVolume; //reset volume
+			gb.apu.ch4.lfsr = 0; //reset LFSR
+		}
+
+		//update length enable
+		gb.apu.ch4.lengthEnable = (val >> 6) & 0x01;
+	}
+
 }
 
 uint8_t apu_read(uint16_t addr)
@@ -388,7 +436,7 @@ uint8_t apu_read(uint16_t addr)
 		return (
 				(gb.apu.masterEnable & 0x01) << 7
 				| 0x70
-				//| gb.apu.ch4.isActive & 0x01 << 3
+				| gb.apu.ch4.isActive & 0x01 << 3
 				//| gb.apu.ch3.isActive & 0x01 << 2
 				| (gb.apu.ch2.isActive & 0x01) << 1
 				| (gb.apu.ch1.isActive & 0x01)
@@ -437,9 +485,30 @@ uint8_t apu_read(uint16_t addr)
 		//NR23 is write-only
 		return 0xFF;
 
+	//reading from NR24
 	if(addr == NR24_ADDR)
 		//only bit 6 is readable
 		return (gb.apu.ch2.lengthEnable << 6) | 0xBF;
+
+	//reading from NR41
+	if(addr == NR41_ADDR)
+		//NR41 is write-only
+		return 0xFF;
+
+	//reading from NR42
+	if(addr == NR24_ADDR)
+		//return NR42
+		return (gb.apu.ch4.envelopeVolume << 4) | (gb.apu.ch4.envelopeDirection << 3) | gb.apu.ch4.envelopePeriod;
+
+	//reading from NR43
+	if(addr == NR43_ADDR)
+		//NR43 is write-only
+		return 0xFF;
+
+	//reading from NR44
+	if(addr == NR44_ADDR)
+		//trigger is write-only, length enable is readable
+		return 0xBF | (gb.apu.ch4.lengthEnable << 6);
 
 	return 0xFF;
 }
