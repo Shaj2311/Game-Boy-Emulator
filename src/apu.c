@@ -41,6 +41,18 @@ void apu_timer_tick()
 			}
 		}
 
+		//tick CH3 even when inactive
+
+		//advance channel 3
+
+		//update frequency timer
+		gb.apu.ch3.frequencyTimer--;
+		if(gb.apu.ch3.frequencyTimer == 0)
+		{
+			gb.apu.ch3.frequencyTimer = gb.apu.ch3.reloadFrequency;
+			gb.apu.ch3.waveIndex = (gb.apu.ch3.waveIndex + 1) % 64;
+		}
+
 		if(gb.apu.ch4.isActive)
 		{
 			//advance channel 4
@@ -50,7 +62,7 @@ void apu_timer_tick()
 				gb.apu.ch4.frequencyTimer--;
 				if(gb.apu.ch4.frequencyTimer == 0)
 				{
-					gb.apu.ch4.frequencyTimer = getCH4ReloadFrequency();
+					gb.apu.ch4.frequencyTimer = getNoiseReloadFrequency();
 					apu_ch4_lfsr_step();
 				}
 			}
@@ -239,6 +251,9 @@ void apu_write(uint16_t addr, uint8_t val)
 			uint32_t cycles = gb.apu.frameSeqCycles;
 			memset(&gb.apu, 0, sizeof(gb.apu));
 			gb.apu.frameSeqCycles = cycles;
+
+			//set CH3 reload frequency to 4096 instead of 0, giving the correct reset rate
+			gb.apu.ch3.reloadFrequency = getWaveReloadFrequency(0);
 		}
 		else
 			gb.apu.masterEnable = 1;
@@ -295,7 +310,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update lower 8 bits of CH1 period value
 		gb.apu.ch1.currFrequency = (gb.apu.ch1.currFrequency & 0x700) | val;
-		gb.apu.ch1.reloadFrequency = getReloadFrequency(gb.apu.ch1.currFrequency); //update reload frequency
+		gb.apu.ch1.reloadFrequency = getPulseReloadFrequency(gb.apu.ch1.currFrequency); //update reload frequency
 		return;
 	}
 
@@ -303,7 +318,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update upper 3 bits of period value
 		gb.apu.ch1.currFrequency = (gb.apu.ch1.currFrequency & 0xFF) | ((val & 0x07) << 8);
-		gb.apu.ch1.reloadFrequency = getReloadFrequency(gb.apu.ch1.currFrequency); //update reload frequency
+		gb.apu.ch1.reloadFrequency = getPulseReloadFrequency(gb.apu.ch1.currFrequency); //update reload frequency
 
 		//check trigger and enable CH1
 		if((val >> 7) == 1)
@@ -359,7 +374,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update lower 8 bits of CH2 period value
 		gb.apu.ch2.currFrequency = (gb.apu.ch2.currFrequency & 0x700) | val;
-		gb.apu.ch2.reloadFrequency = getReloadFrequency(gb.apu.ch2.currFrequency); //update reload frequency
+		gb.apu.ch2.reloadFrequency = getPulseReloadFrequency(gb.apu.ch2.currFrequency); //update reload frequency
 		return;
 	}
 
@@ -367,7 +382,7 @@ void apu_write(uint16_t addr, uint8_t val)
 	{
 		//update upper 3 bits of period value
 		gb.apu.ch2.currFrequency = (gb.apu.ch2.currFrequency & 0xFF) | ((val & 0x07) << 8);
-		gb.apu.ch2.reloadFrequency = getReloadFrequency(gb.apu.ch2.currFrequency); //update reload frequency
+		gb.apu.ch2.reloadFrequency = getPulseReloadFrequency(gb.apu.ch2.currFrequency); //update reload frequency
 
 		//check trigger and enable CH2
 		if((val >> 7) == 1)
@@ -432,7 +447,7 @@ void apu_write(uint16_t addr, uint8_t val)
 			gb.apu.ch4.envelopeTimer = gb.apu.ch4.envelopePeriod; //reset envelope timer
 			gb.apu.ch4.currentVolume = gb.apu.ch4.envelopeVolume; //reset volume
 			gb.apu.ch4.lfsr = 0; //reset LFSR
-			gb.apu.ch4.frequencyTimer = getCH4ReloadFrequency(); //reset frequency timer
+			gb.apu.ch4.frequencyTimer = getNoiseReloadFrequency(); //reset frequency timer
 		}
 
 		//update length enable
@@ -655,7 +670,7 @@ void apu_ch1_sweep_tick()
 	{
 		gb.apu.ch1.sweepShadow = nextSweepValue;
 		gb.apu.ch1.currFrequency = nextSweepValue;
-		gb.apu.ch1.reloadFrequency = getReloadFrequency(nextSweepValue);
+		gb.apu.ch1.reloadFrequency = getPulseReloadFrequency(nextSweepValue);
 
 		//check overflow, disable CH1 if needed
 		if(apu_get_ch1_sweep(gb.apu.ch1.sweepShadow) > 0x7FF)
@@ -678,8 +693,13 @@ void apu_ch1_sweep_trigger()
 }
 
 
+uint16_t getWaveReloadFrequency(uint16_t frequency)
+{
+	return (2048 - frequency) * 2;
+}
 
-uint32_t getCH4ReloadFrequency()
+
+uint32_t getNoiseReloadFrequency()
 {
 	//convert NR43 fields to T-cycle value
 	if(gb.apu.ch4.clockShift >= 14) return 0; //channel stopped
@@ -716,7 +736,7 @@ void apu_ch4_lfsr_step()
 
 
 
-uint16_t getReloadFrequency(uint16_t currFrequency)
+uint16_t getPulseReloadFrequency(uint16_t currFrequency)
 {
 	return (2048 - currFrequency) * 4;
 }

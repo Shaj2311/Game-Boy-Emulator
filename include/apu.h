@@ -61,6 +61,25 @@ typedef struct
 
 typedef struct
 {
+	uint16_t currFrequency;		//current frequency of channel
+	uint16_t frequencyTimer;	//down counter
+	uint16_t reloadFrequency;	//reset to this when timer hits zero
+
+	uint8_t lengthEnable;
+	uint16_t lengthCounter;		//max duration of currently playing wave
+
+	uint8_t dacEnable;		// Enable for DAC (Digital-Analog Converter)
+	uint8_t isActive;		//channel enable (depends on DAC)
+
+
+	uint8_t outputLevel;		//current volume (mute/100%/50%/25%)
+
+	uint8_t waveIndex;
+	uint8_t waveRam[16];
+} CH3;
+
+typedef struct
+{
 	uint16_t lfsr;			//linear feedback shift register
 
 	uint32_t frequencyTimer;	//down counter
@@ -90,6 +109,7 @@ typedef struct
 	//Channels
 	CH1 ch1;
 	CH2 ch2;
+	CH3 ch3;
 	CH4 ch4;
 
 	//frame sequencer info
@@ -132,14 +152,19 @@ uint8_t apu_read(uint16_t addr);
 
 void apu_mix_sample();
 
+//ch1 helpers
 uint16_t apu_get_ch1_sweep(uint16_t shadow);
 void apu_ch1_sweep_tick();
 void apu_ch1_sweep_trigger();
 
-void apu_ch4_lfsr_step();
-uint32_t getCH4ReloadFrequency();
+uint16_t getWaveReloadFrequency(uint16_t frequency);
 
-uint16_t getReloadFrequency(uint16_t currFrequency);
+//ch4 helpers
+void apu_ch4_lfsr_step();
+uint32_t getNoiseReloadFrequency();
+
+//used by CH1 and CH2
+uint16_t getPulseReloadFrequency(uint16_t currFrequency);
 
 
 #endif
