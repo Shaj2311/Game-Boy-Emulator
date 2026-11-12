@@ -11,6 +11,15 @@ uint8_t dutyPatterns[4] =
 	0b01111110
 };
 
+//how many bits to shift wave output right, based on channel output level (volume)
+uint8_t waveOutputShift[4] =
+{
+	4,	//mute
+	0,	//keep at 100%
+	1,	//reduce to 50%
+	2	//reduce to 25%
+};
+
 void apu_timer_tick()
 {
 	if(gb.apu.masterEnable == 1)
@@ -441,7 +450,7 @@ void apu_write(uint16_t addr, uint8_t val)
 		gb.apu.ch3.outputLevel = (val >> 5) & 0x03;
 		return;
 	}
-	
+
 	if(addr == NR33_ADDR)
 	{
 		//update frequency
@@ -696,6 +705,26 @@ void apu_mix_sample()
 		//left, right: 1..8
 		if(gb.apu.ch2Left) left += ch2Val * (gb.apu.volLeft + 1);
 		if(gb.apu.ch2Right) right += ch2Val * (gb.apu.volRight + 1);
+	}
+
+	//mix channel 3
+	if(gb.apu.ch3.dacEnable && gb.apu.ch3.isActive)
+	{
+		//get current pattern value (nibble)
+		//(each byte holds two samples, extract higher, then lower)
+		uint8_t byte = gb.apu.ch3.waveRam[gb.apu.ch3.waveIndex >> 1];
+		int8_t ch3Val = (gb.apu.ch3.waveIndex % 2 == 0) ? (byte >> 4) : (byte & 0x0F);
+
+		//apply volume (0..15)
+		ch3Val >>= waveOutputShift[gb.apu.ch3.outputLevel];
+
+		//center around 0 (-15..15)
+		ch3Val = 15 - (ch3Val * 2);
+
+		//add current ch3 output to global left and right output, apply global volume
+		//left, right: 1..8
+		if(gb.apu.ch3Left) left += ch3Val * (gb.apu.volLeft + 1);
+		if(gb.apu.ch3Right) right += ch3Val * (gb.apu.volRight + 1);
 	}
 
 	//mix channel 4
