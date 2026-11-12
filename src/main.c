@@ -24,8 +24,10 @@ int main(int argc, char **argv)
 	//Create window
 	SDL_Window *window = SDL_CreateWindow("Game Boy", 160 * 5, 144 * 5, 0);
 	SDL_Renderer *renderer = SDL_CreateRenderer(window, 0);
+	SDL_SetRenderLogicalPresentation(renderer, 160, 144, SDL_LOGICAL_PRESENTATION_LETTERBOX);
 	SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, 160, 144);
 	SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+	SDL_SetWindowFullscreen(window, 1);
 	SDL_Event event;
 	int running = 1;
 
@@ -41,6 +43,9 @@ int main(int argc, char **argv)
 	//Initialize gamepad
 	SDL_Gamepad *gamepad = 0;
 	SDL_JoystickID gamepadID = 0;
+
+	//Hide cursor
+	SDL_HideCursor();
 
 	int padCount = 0;
 	SDL_JoystickID *pads = SDL_GetGamepads(&padCount);
@@ -107,6 +112,9 @@ int main(int argc, char **argv)
 						case SDL_SCANCODE_J: case SDL_SCANCODE_KP_1:
 							gb_press_button(GB_INPUT_B);
 							break;
+
+						case SDL_SCANCODE_F11: //toggle fullscreen
+							SDL_SetWindowFullscreen(window, !(SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN));
 
 						default: break;
 					}
