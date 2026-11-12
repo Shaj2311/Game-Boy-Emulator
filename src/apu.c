@@ -83,11 +83,13 @@ void apu_timer_tick()
 			//advance length counter if > 0
 			if(gb.apu.ch1.lengthEnable && gb.apu.ch1.lengthCounter > 0) gb.apu.ch1.lengthCounter--;
 			if(gb.apu.ch2.lengthEnable && gb.apu.ch2.lengthCounter > 0) gb.apu.ch2.lengthCounter--;
+			if(gb.apu.ch3.lengthEnable && gb.apu.ch3.lengthCounter > 0) gb.apu.ch3.lengthCounter--;
 			if(gb.apu.ch4.lengthEnable && gb.apu.ch4.lengthCounter > 0) gb.apu.ch4.lengthCounter--;
 
 			//if length counter hit zero, stop playing
 			if(gb.apu.ch1.lengthCounter == 0) gb.apu.ch1.isActive = 0;
 			if(gb.apu.ch2.lengthCounter == 0) gb.apu.ch2.isActive = 0;
+			if(gb.apu.ch3.lengthCounter == 0) gb.apu.ch3.isActive = 0;
 			if(gb.apu.ch4.lengthCounter == 0) gb.apu.ch4.isActive = 0;
 		}
 
