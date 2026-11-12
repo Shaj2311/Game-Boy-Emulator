@@ -19,7 +19,7 @@ int main(int argc, char **argv)
 	gb_get_cartridge_path(argc, argv);
 
 	//Initialize SDL3
-	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
+	SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMEPAD);
 
 	//Create window
 	SDL_Window *window = SDL_CreateWindow("Game Boy", 160 * 5, 144 * 5, 0);
@@ -37,6 +37,23 @@ int main(int argc, char **argv)
 	SDL_AudioDeviceID audioDevice = SDL_OpenAudioDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &spec);
 	SDL_AudioStream *audioStream = SDL_CreateAudioStream(&spec, &spec);
 	SDL_BindAudioStream(audioDevice, audioStream);
+
+	//Initialize gamepad
+	SDL_Gamepad *gamepad = 0;
+	SDL_JoystickID gamepadID = 0;
+
+	int padCount = 0;
+	SDL_JoystickID *pads = SDL_GetGamepads(&padCount);
+	if(pads)
+	{
+		if(padCount > 0)
+		{
+			gamepad = SDL_OpenGamepad(pads[0]);
+			if(gamepad) gamepadID = SDL_GetGamepadID(gamepad);
+		}
+		SDL_free(pads);
+	}
+
 
 	//get performance frequency (to convert ticks to milliseconds)
 	uint64_t sdlPerfFreq = SDL_GetPerformanceFrequency();
@@ -128,6 +145,29 @@ int main(int argc, char **argv)
 						default: break;
 					}
 					break;
+
+				case SDL_EVENT_GAMEPAD_ADDED: //gamepad connected after event polling started
+					if(gamepad) break;
+					gamepad = SDL_OpenGamepad(event.gdevice.which);
+					if(gamepad) gamepadID = SDL_GetGamepadID(gamepad);
+					break;
+
+				case SDL_EVENT_GAMEPAD_REMOVED: //gamepad disconnected after event polling started
+					if(event.gdevice.which != gamepadID) break;
+					SDL_CloseGamepad(gamepad);
+					gamepad = 0;
+					gamepadID = 0;
+					break;
+
+				case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+					if(event.gdevice.which != gamepadID) break;
+					puts("Button down");
+					break;
+
+				case SDL_EVENT_GAMEPAD_BUTTON_UP:
+					if(event.gdevice.which != gamepadID) break;
+					puts("Button up");
+					break;
 			}
 		}
 
@@ -205,6 +245,7 @@ int main(int argc, char **argv)
 	SDL_DestroyRenderer(renderer);
 	SDL_DestroyAudioStream(audioStream);
 	SDL_CloseAudioDevice(audioDevice);
+	if(gamepad) SDL_CloseGamepad(gamepad);
 	free(gb.cartridgeRAM);
 	free(gb.rom);
 	return 0;
