@@ -46,7 +46,7 @@ void apu_timer_tick()
 		//advance channel 3
 
 		//update frequency timer
-		gb.apu.ch3.frequencyTimer--;
+		if(gb.apu.ch3.frequencyTimer > 0) gb.apu.ch3.frequencyTimer--;
 		if(gb.apu.ch3.frequencyTimer == 0)
 		{
 			gb.apu.ch3.frequencyTimer = gb.apu.ch3.reloadFrequency;
@@ -212,12 +212,15 @@ void apu_write(uint16_t addr, uint8_t val)
 	//APU off
 	if(gb.apu.masterEnable == 0)
 	{
-		//Allow writes to lower 6 bits of NRx1 registers
-		if(addr == NR11_ADDR || addr == NR21_ADDR/* || addr == NR31_ADDR*/ || addr == NR41_ADDR)
+		//Allow writes to lower 6 bits of NRx1 registers (except NR31)
+		if(addr == NR11_ADDR || addr == NR21_ADDR ||addr == NR41_ADDR)
 			val &= 0x3F;
-		//Allow writes to NR52 master control
-		else if(addr != NR52_ADDR)
+
+		//Allow writes to NR52 (master control), NR31 (CH3 length counter) and wave RAM
+		else if(addr != NR52_ADDR && addr != NR31_ADDR
+		&& !(addr >= WAVE_RAM_ADDR && addr < WAVE_RAM_ADDR + 16))
 			return;
+
 		//All other registers are read-only
 	}
 
@@ -253,12 +256,17 @@ void apu_write(uint16_t addr, uint8_t val)
 			uint32_t cycles = gb.apu.frameSeqCycles;
 			memset(&gb.apu, 0, sizeof(gb.apu));
 			gb.apu.frameSeqCycles = cycles;
-
-			//set CH3 reload frequency to 4096 instead of 0, giving the correct reset rate
-			gb.apu.ch3.reloadFrequency = getWaveReloadFrequency(0);
 		}
 		else
+		{
+			//enable APU
 			gb.apu.masterEnable = 1;
+
+			//set CH3 reload frequency
+			if(gb.apu.ch3.reloadFrequency == 0)
+				//set CH3 reload frequency to 4096 instead of 0, giving the correct reset rate
+				gb.apu.ch3.reloadFrequency = getWaveReloadFrequency(0);
+		}
 		return;
 	}
 
@@ -407,6 +415,71 @@ void apu_write(uint16_t addr, uint8_t val)
 		gb.apu.ch2.lengthEnable = (val >> 6) & 0x01;
 	}
 
+	//CH3
+	if(addr == NR30_ADDR)
+	{
+		//update DAC enable
+		gb.apu.ch3.dacEnable = val >> 7;
+
+		//disable channel if DAC = 0
+		if(gb.apu.ch3.dacEnable == 0)
+			gb.apu.ch3.isActive = 0;
+
+		return;
+	}
+
+	if(addr == NR31_ADDR)
+	{
+		//update length counter
+		gb.apu.ch3.lengthCounter = 256 - val;
+		return;
+	}
+
+	if(addr == NR32_ADDR)
+	{
+		//update output level
+		gb.apu.ch3.outputLevel = (val >> 5) & 0x03;
+		return;
+	}
+	
+	if(addr == NR33_ADDR)
+	{
+		//update frequency
+		gb.apu.ch3.currFrequency = (gb.apu.ch3.currFrequency & 0x0700) | val;
+		gb.apu.ch3.reloadFrequency = getWaveReloadFrequency(gb.apu.ch3.currFrequency);
+		return;
+	}
+
+	if(addr == NR34_ADDR)
+	{
+		//update upper 3 bits of period value
+		gb.apu.ch3.currFrequency = (gb.apu.ch3.currFrequency & 0x00FF) | ((val & 0x07) << 8);
+		gb.apu.ch3.reloadFrequency = getWaveReloadFrequency(gb.apu.ch3.currFrequency);
+
+		//check trigger
+		if((val >> 7) == 1)
+		{
+			//reload frequency timer
+			gb.apu.ch3.frequencyTimer = gb.apu.ch3.reloadFrequency;
+
+			//reset wave RAM index
+			gb.apu.ch3.waveIndex = 0;
+
+			//reset length timer if expired
+			if(gb.apu.ch3.lengthCounter == 0)
+				gb.apu.ch3.lengthCounter = 256;
+
+			//enable/disable channel according to DAC enable
+			gb.apu.ch3.isActive = gb.apu.ch3.dacEnable;
+		}
+
+		//update length enable
+		gb.apu.ch3.lengthEnable = (val >> 6) & 0x01;
+		return;
+	}
+
+	if(addr >= WAVE_RAM_ADDR && addr < (WAVE_RAM_ADDR + 16))
+		apu_wave_ram_write(addr, val);
 
 	//CH4
 	if(addr == NR41_ADDR)
@@ -485,7 +558,7 @@ uint8_t apu_read(uint16_t addr)
 				(gb.apu.masterEnable & 0x01) << 7
 				| 0x70
 				| (gb.apu.ch4.isActive & 0x01) << 3
-				//| gb.apu.ch3.isActive & 0x01 << 2
+				| (gb.apu.ch3.isActive & 0x01) << 2
 				| (gb.apu.ch2.isActive & 0x01) << 1
 				| (gb.apu.ch1.isActive & 0x01)
 				);
@@ -538,6 +611,29 @@ uint8_t apu_read(uint16_t addr)
 		//only bit 6 is readable
 		return (gb.apu.ch2.lengthEnable << 6) | 0xBF;
 
+	//reading from NR30
+	if(addr == NR30_ADDR)
+		return (gb.apu.ch3.dacEnable << 7) | 0x7F;
+
+	//reading from NR31
+	if(addr == NR31_ADDR)
+		//NR31 is write-only
+		return 0xFF;
+
+	//reading from NR32
+	if(addr == NR32_ADDR)
+		return (gb.apu.ch3.outputLevel << 5) | 0x9F;
+
+	//reading from NR33
+	if(addr == NR33_ADDR)
+		//NR33 is write-only
+		return 0xFF;
+
+	//reading from NR34
+	if(addr == NR34_ADDR)
+		//trigger and period are write-only, length enable is readable
+		return (gb.apu.ch3.lengthEnable << 6) | 0xBF;
+
 	//reading from NR41
 	if(addr == NR41_ADDR)
 		//NR41 is write-only
@@ -557,6 +653,10 @@ uint8_t apu_read(uint16_t addr)
 	if(addr == NR44_ADDR)
 		//trigger is write-only, length enable is readable
 		return 0xBF | (gb.apu.ch4.lengthEnable << 6);
+
+	//reading from wave RAM
+	if(addr >= WAVE_RAM_ADDR && addr < (WAVE_RAM_ADDR + 16))
+		return apu_wave_ram_read(addr);
 
 	return 0xFF;
 }
@@ -700,6 +800,21 @@ uint16_t getWaveReloadFrequency(uint16_t frequency)
 	return (2048 - frequency) * 2;
 }
 
+uint8_t apu_wave_ram_read(uint16_t addr)
+{
+	//allow read only when channel is off
+	if(gb.apu.ch3.isActive) return 0xFF;
+	return gb.apu.ch3.waveRam[addr - WAVE_RAM_ADDR];
+}
+
+void apu_wave_ram_write(uint16_t addr, uint8_t val)
+{
+	//block writes if APU is on and CH3 is active
+	if(gb.apu.masterEnable == 1 && gb.apu.ch3.isActive) return;
+
+	//write to wave RAM
+	gb.apu.ch3.waveRam[addr - WAVE_RAM_ADDR] = val;
+}
 
 uint32_t getNoiseReloadFrequency()
 {

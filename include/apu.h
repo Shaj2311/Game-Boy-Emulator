@@ -162,6 +162,8 @@ uint16_t getWaveReloadFrequency(uint16_t frequency);
 //ch4 helpers
 void apu_ch4_lfsr_step();
 uint32_t getNoiseReloadFrequency();
+uint8_t apu_wave_ram_read(uint16_t addr);
+void apu_wave_ram_write(uint16_t addr, uint8_t val);
 
 //used by CH1 and CH2
 uint16_t getPulseReloadFrequency(uint16_t currFrequency);
