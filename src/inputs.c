@@ -1,7 +1,7 @@
 #include "gb.h"
 #include "addr.h"
 
-void gb_press_key(JoypadInput input)
+void gb_press_button(JoypadInput input)
 {
 	//update joypad keys
 	gb.joypadInputs &= ~(1 << input);
@@ -13,7 +13,7 @@ void gb_press_key(JoypadInput input)
 	gb.sysbus[0xFF0F] |= 0x10;
 }
 
-void gb_release_key(JoypadInput input)
+void gb_release_button(JoypadInput input)
 {
 	//update joypad keys
 	gb.joypadInputs |= 1 << input;

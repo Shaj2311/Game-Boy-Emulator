@@ -131,8 +131,8 @@ void gb_execute(uint8_t instruction);
 void gb_exit_invalid_opcode(uint8_t instruction);
 
 uint8_t gb_compute_joyp();
-void gb_press_key(JoypadInput input);
-void gb_release_key(JoypadInput input);
+void gb_press_button(JoypadInput input);
+void gb_release_button(JoypadInput input);
 
 void mbcControlWrite(uint16_t addr, uint8_t val);
 uint8_t mbcRomRead(uint16_t addr);
