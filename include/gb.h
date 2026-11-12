@@ -3,6 +3,13 @@
 #include <stdint.h>
 #include "apu.h"
 
+// GameBoy constants
+#define GB_MASTER_CLOCK_FREQ 4194304
+#define GB_FPS 59.73
+#define GB_CYCLES_PER_FRAME (GB_MASTER_CLOCK_FREQ / GB_FPS)
+#define GB_MS_PER_FRAME (1000.0 / GB_FPS)
+#define GB_AUDIO_FREQUENCY 32768
+
 typedef enum
 {
 	PPU_MODE_HBLANK,
@@ -42,10 +49,10 @@ typedef enum
 	GB_INPUT_START,
 
 	// D-pad
-	INPUT_RIGHT,
-	INPUT_LEFT,
-	INPUT_UP,
-	INPUT_DOWN,
+	GB_INPUT_RIGHT,
+	GB_INPUT_LEFT,
+	GB_INPUT_UP,
+	GB_INPUT_DOWN,
 } JoypadInput;
 
 typedef struct

@@ -86,14 +86,14 @@ int main(int argc, char **argv)
 							running = 0; break;
 
 						case SDL_SCANCODE_S: case SDL_SCANCODE_DOWN:
-							gb_press_button(INPUT_DOWN);
+							gb_press_button(GB_INPUT_DOWN);
 							break;
 						case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER:
 							gb_press_button(GB_INPUT_START);
 							break;
 
 						case SDL_SCANCODE_W: case SDL_SCANCODE_UP:
-							gb_press_button(INPUT_UP);
+							gb_press_button(GB_INPUT_UP);
 							break;
 						case SDL_SCANCODE_TAB: case SDL_SCANCODE_KP_PLUS:
 							gb_press_button(GB_INPUT_SELECT);
@@ -103,11 +103,11 @@ int main(int argc, char **argv)
 							gb_press_button(GB_INPUT_A);
 							break;
 						case SDL_SCANCODE_A: case SDL_SCANCODE_LEFT:
-							gb_press_button(INPUT_LEFT);
+							gb_press_button(GB_INPUT_LEFT);
 							break;
 
 						case SDL_SCANCODE_D: case SDL_SCANCODE_RIGHT:
-							gb_press_button(INPUT_RIGHT);
+							gb_press_button(GB_INPUT_RIGHT);
 							break;
 						case SDL_SCANCODE_J: case SDL_SCANCODE_KP_1:
 							gb_press_button(GB_INPUT_B);
@@ -123,14 +123,14 @@ int main(int argc, char **argv)
 					switch(event.key.scancode)
 					{
 						case SDL_SCANCODE_S: case SDL_SCANCODE_DOWN:
-							gb_release_button(INPUT_DOWN);
+							gb_release_button(GB_INPUT_DOWN);
 							break;
 						case SDL_SCANCODE_RETURN: case SDL_SCANCODE_KP_ENTER:
 							gb_release_button(GB_INPUT_START);
 							break;
 
 						case SDL_SCANCODE_W: case SDL_SCANCODE_UP:
-							gb_release_button(INPUT_UP);
+							gb_release_button(GB_INPUT_UP);
 							break;
 						case SDL_SCANCODE_TAB: case SDL_SCANCODE_KP_PLUS:
 							gb_release_button(GB_INPUT_SELECT);
@@ -140,11 +140,11 @@ int main(int argc, char **argv)
 							gb_release_button(GB_INPUT_A);
 							break;
 						case SDL_SCANCODE_A: case SDL_SCANCODE_LEFT:
-							gb_release_button(INPUT_LEFT);
+							gb_release_button(GB_INPUT_LEFT);
 							break;
 
 						case SDL_SCANCODE_D: case SDL_SCANCODE_RIGHT:
-							gb_release_button(INPUT_RIGHT);
+							gb_release_button(GB_INPUT_RIGHT);
 							break;
 						case SDL_SCANCODE_J: case SDL_SCANCODE_KP_1:
 							gb_release_button(GB_INPUT_B);
@@ -179,16 +179,16 @@ int main(int argc, char **argv)
 							break;
 
 						case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
-							gb_press_button(INPUT_RIGHT);
+							gb_press_button(GB_INPUT_RIGHT);
 							break;
 						case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-							gb_press_button(INPUT_DOWN);
+							gb_press_button(GB_INPUT_DOWN);
 							break;
 						case SDL_GAMEPAD_BUTTON_DPAD_UP:
-							gb_press_button(INPUT_UP);
+							gb_press_button(GB_INPUT_UP);
 							break;
 						case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
-							gb_press_button(INPUT_LEFT);
+							gb_press_button(GB_INPUT_LEFT);
 							break;
 
 						case SDL_GAMEPAD_BUTTON_EAST:
@@ -214,22 +214,24 @@ int main(int argc, char **argv)
 							break;
 
 						case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
-							gb_release_button(INPUT_RIGHT);
+							gb_release_button(GB_INPUT_RIGHT);
 							break;
 						case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
-							gb_release_button(INPUT_DOWN);
+							gb_release_button(GB_INPUT_DOWN);
 							break;
 						case SDL_GAMEPAD_BUTTON_DPAD_UP:
-							gb_release_button(INPUT_UP);
+							gb_release_button(GB_INPUT_UP);
 							break;
 						case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
-							gb_release_button(INPUT_LEFT);
+							gb_release_button(GB_INPUT_LEFT);
 							break;
 
 						case SDL_GAMEPAD_BUTTON_EAST:
+						case SDL_GAMEPAD_BUTTON_NORTH:
 							gb_release_button(GB_INPUT_A);
 							break;
 						case SDL_GAMEPAD_BUTTON_SOUTH:
+						case SDL_GAMEPAD_BUTTON_WEST:
 							gb_release_button(GB_INPUT_B);
 							break;
 					}
