@@ -6,12 +6,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 
-// GameBoy constants
-#define GB_MASTER_CLOCK_FREQ 4194304
-#define GB_FPS 59.73
-#define GB_CYCLES_PER_FRAME (GB_MASTER_CLOCK_FREQ / GB_FPS)
-#define GB_MS_PER_FRAME (1000.0 / GB_FPS)
-#define GB_AUDIO_FREQUENCY 32768
+#define JOYSTICK_DEADZONE 16000
 
 int main(int argc, char **argv)
 {
@@ -43,6 +38,8 @@ int main(int argc, char **argv)
 	//Initialize gamepad
 	SDL_Gamepad *gamepad = 0;
 	SDL_JoystickID gamepadID = 0;
+	int16_t stickX = 0, stickY = 0;
+	uint8_t stickUp = 0, stickDown = 0, stickLeft = 0, stickRight = 0;
 
 	//Hide cursor
 	SDL_HideCursor();
@@ -168,7 +165,7 @@ int main(int argc, char **argv)
 					break;
 
 				case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
-					if(event.gdevice.which != gamepadID) break;
+					if(event.gbutton.which != gamepadID) break;
 					switch(event.gbutton.button)
 					{
 						case SDL_GAMEPAD_BUTTON_START:
@@ -203,7 +200,7 @@ int main(int argc, char **argv)
 					break;
 
 				case SDL_EVENT_GAMEPAD_BUTTON_UP:
-					if(event.gdevice.which != gamepadID) break;
+					if(event.gbutton.which != gamepadID) break;
 					switch(event.gbutton.button)
 					{
 						case SDL_GAMEPAD_BUTTON_START:
@@ -235,6 +232,46 @@ int main(int argc, char **argv)
 							gb_release_button(GB_INPUT_B);
 							break;
 					}
+					break;
+
+				case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+					if(event.gaxis.which != gamepadID) break;
+
+					//get stick axis data
+					if(event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTX)
+						stickX = event.gaxis.value;
+					else if(event.gaxis.axis == SDL_GAMEPAD_AXIS_LEFTY)
+						stickY = event.gaxis.value;
+					else break;
+
+					//get analog movement data
+					uint8_t isUp = stickY < -JOYSTICK_DEADZONE;
+					uint8_t isDown = stickY > JOYSTICK_DEADZONE;
+					uint8_t isLeft = stickX < -JOYSTICK_DEADZONE;
+					uint8_t isRight = stickX > JOYSTICK_DEADZONE;
+
+					//only send input on transitions
+					if(isUp != stickUp)
+					{
+						stickUp = isUp;
+						isUp ? gb_press_button(GB_INPUT_UP) : gb_release_button(GB_INPUT_UP);
+					}
+					if(isDown != stickDown)
+					{
+						stickDown = isDown;
+						isDown ? gb_press_button(GB_INPUT_DOWN) : gb_release_button(GB_INPUT_DOWN);
+					}
+					if(isRight != stickRight)
+					{
+						stickRight = isRight;
+						isRight ? gb_press_button(GB_INPUT_RIGHT) : gb_release_button(GB_INPUT_RIGHT);
+					}
+					if(isLeft != stickLeft)
+					{
+						stickLeft = isLeft;
+						isLeft ? gb_press_button(GB_INPUT_LEFT) : gb_release_button(GB_INPUT_LEFT);
+					}
+
 					break;
 			}
 		}
