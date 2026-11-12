@@ -36,10 +36,10 @@ typedef enum
 typedef enum
 {
 	// buttons
-	INPUT_A,
-	INPUT_B,
-	INPUT_SELECT,
-	INPUT_START,
+	GB_INPUT_A,
+	GB_INPUT_B,
+	GB_INPUT_SELECT,
+	GB_INPUT_START,
 
 	// D-pad
 	INPUT_RIGHT,
