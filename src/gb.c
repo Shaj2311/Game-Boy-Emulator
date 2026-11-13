@@ -41,6 +41,41 @@ void gb_get_cartridge_path(int argc, char **argv)
 	if(argc == 2)
 	{
 		gb.cartridgeRomPath = argv[1];
+
+		//print help if -h/--help passed instead of cartridge path
+		if(strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0)
+		{
+			//print detailed help message
+			puts("Game Boy Emulator\n"
+			"A lightweight, from-scratch DMG Gameboy Emulator\n"
+			"\n"
+			"USAGE\n"
+			"  gb <Path to Cartridge>\tRun a cartridge\n"
+			"  gb -h, --help\t\t\tDisplay this help message\n"
+			"\n"
+			"EMULATOR CONTROLS\n"
+			"  Toggle Fullscreen\tF11\n"
+			"  Quit\t\t\tEscape\n"
+			"\n"
+			"KEYBOARD MAPPING\n"
+			"  D-Pad\t\tWASD / Arrow Keys\n"
+			"  A\t\tK / NumPad 2\n"
+			"  B\t\tJ / NumPad 1\n"
+			"  Start\t\tEnter / NumPad Enter\n"
+			"  Select\tTab / NumPad +\n"
+			"\n"
+			"CONTROLLER MAPPING\n"
+			"  D-Pad\t\tD-Pad / Left Analog Stick\n"
+			"  A\t\tEAST / NORTH\n"
+			"  B\t\tSOUTH / WEST\n"
+			"  Start\t\tStart\n"
+			"  Select\tSelect\n"
+			"\n"
+			);
+			
+			exit(0);
+		}
+
 		return;
 	}
 
@@ -51,7 +86,8 @@ void gb_get_cartridge_path(int argc, char **argv)
 		puts("Error: Too many arguments provided");
 
 	//print help message
-	printf("Usage: %s pathToCartridge\n", argv[0]);
+	puts("\nUsage: gb <Path to Cartridge>");
+	puts("Use 'gb -h' for more details");
 
 	exit(1);
 }
