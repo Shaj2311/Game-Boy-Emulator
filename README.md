@@ -55,7 +55,7 @@ Always-powered SRAM hardware emulated by saving SRAM data on-disk as a `.sav` fi
 
 
 ## Installation
-1. Make sure you have SDL3 installed
+1. Install [SDL3](https://www.libsdl.org)
 2. Clone the repository
 ```
 git clone https://github.com/Shaj2311/Game-Boy-Emulator
