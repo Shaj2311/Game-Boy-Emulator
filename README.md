@@ -76,3 +76,8 @@ Use the following for a detailed help message including usage and controls
 ./gb -h
 ./gb --help
 ```
+
+## References
+The following documentation was used for reference during development:
+- [Pandocs](https://gbdev.io/pandocs/) was used as the main reference. It contains comprehensive information about GameBoy architecture, register layouts, instruction opcodes, internal workings and quirks.
+- [RGBDS documentation](https://rgbds.gbdev.io/docs/v1.0.1/) was used when building the instruction set implementations. It details the functionality of every opcode in the SM83 instruction set, explaining what it does and what flags are affected.
